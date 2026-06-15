@@ -256,7 +256,7 @@
           <input type="file" id="content-image" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleImageUpload(this)">
         </div>
         <div id="image-preview-wrap" style="display:none; margin-top:0.75rem; position:relative;">
-          <img id="image-preview" src="" alt="Cover preview" style="width:100%;max-height:220px;object-fit:cover;display:block;border:1px solid var(--rule);">
+          <img id="image-preview" src="" alt="Cover preview" style="width:100%;max-height:var(--default-card-image-height);object-fit:cover;display:block;border:1px solid var(--rule);">
           <button onclick="clearImage()" style="position:absolute;top:6px;right:6px;background:var(--ink);color:var(--white);border:none;padding:3px 8px;cursor:pointer;font-size:11px;">✕ Remove</button>
         </div>
       </div>
