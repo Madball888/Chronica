@@ -3,6 +3,17 @@
 const ADMIN_PASSWORD = 'chronica2024';
 let isAdmin = false;
 
+function getFallbackImage(item, w = 1200, h = 800) {
+  const parts = [];
+  if (item.category) parts.push(item.category.split(/\s+/).slice(0,2).join(','));
+  if (item.era) parts.push(item.era);
+  const titleWord = (item.title || '').split(/\s+/)[0];
+  if (titleWord) parts.push(titleWord);
+  parts.push('history', 'museum', 'archive');
+  const q = encodeURIComponent(parts.filter(Boolean).join(','));
+  return `https://source.unsplash.com/${w}x${h}/?${q}`;
+}
+
 function openLogin() {
   if (isAdmin) {
     showView('admin');
@@ -139,7 +150,7 @@ const HERO_INTERVAL = 5000;
 function renderHero() {
   const heroIds = ['fall-of-rome', 'mongol-empire', 'plague', 'napoleon', 'd-day-landings', 'renaissance'];
   _heroItems = heroIds
-    .map(id => { const s = getSample(id); return s && s.image ? { ...s, _id: id } : null; })
+    .map(id => { const s = getSample(id); return s ? { ...s, _id: id } : null; })
     .filter(Boolean)
     .slice(0, 3);
 
@@ -147,9 +158,10 @@ function renderHero() {
   const wrap = document.getElementById('hero-wrap');
   if (!wrap) return;
 
-  function slideHtml(item) {
+    function slideHtml(item) {
     const isVideo = item.type === 'video';
     const clickFn = `readSample('${item._id}')`;
+      const imgUrl = item.image || getFallbackImage(item, 1200, 800);
     return `
       <div class="hero-slide">
         <div class="hero-card" onclick="${clickFn}">
@@ -160,7 +172,7 @@ function renderHero() {
             <div class="hero-meta">${item.author || 'Chronica Editorial'} &nbsp;·&nbsp; ${item.date || 'Archive'}</div>
           </div>
           <div class="hero-image-wrap">
-            <img class="hero-image" src="${item.image}" alt="${item.title}"
+            <img class="hero-image" src="${imgUrl}" alt="${item.title}"
               onerror="this.closest('.hero-image-wrap').style.background='var(--stone)';this.style.display='none'" loading="eager">
             ${item.imageCaption ? `<div class="hero-image-label">${item.imageCaption}</div>` : ''}
           </div>
@@ -551,9 +563,10 @@ function renderFront() {
         const cardClass = isVideo ? 'video-card' : 'article-card';
         const cat = (item.category || '').replace(/"/g, '&quot;');
 
+        const imgUrl = item.image || getFallbackImage(item, 1200, 800);
         if (isVideo) {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
-            ${item.image ? `<div class="video-cover-wrap"><img src="${item.image}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>` : '<div class="video-thumb" style="width:100%;height:120px;margin-bottom:0.75rem;border-radius:0;">▶</div>'}
+            <div class="video-cover-wrap"><img src="${imgUrl}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>
             <div class="tag tag-video">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
@@ -561,7 +574,7 @@ function renderFront() {
           </div>`;
         } else {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
-            ${item.image ? `<img class="card-cover-image" src="${item.image}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">` : ''}
+            <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
             <div class="tag ${tagClass}">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
