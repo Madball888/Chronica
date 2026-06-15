@@ -1756,3 +1756,25 @@ select { font-family: var(--font-ui); font-size: 13px; }
   height: 100%;
   border: none;
 }
+
+/* When we want the original YouTube player size, add the 'native' class to the wrapper.
+   Native wrappers remove the responsive padding and let the iframe use its width/height. */
+.yt-poster-wrap.native {
+  padding-bottom: 0;
+  height: auto;
+}
+.yt-poster-wrap.native img {
+  position: static;
+  width: auto;
+  height: auto;
+}
+.yt-poster-wrap.native iframe {
+  display: none; /* shown when wrapper gets .playing */
+  position: static;
+  inset: auto;
+  width: 560px;
+  height: 315px;
+}
+.yt-poster-wrap.native.playing iframe {
+  display: block !important;
+}

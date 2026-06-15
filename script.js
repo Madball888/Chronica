@@ -661,11 +661,15 @@ function renderReader(item) {
         const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '';
         const autoplaySrc = item.embedUrl + (item.embedUrl.includes('?') ? '&' : '?') + 'autoplay=1&rel=0&modestbranding=1';
         const posterId = 'yt-' + (ytId || Math.random().toString(36).slice(2));
+        const isYouTube = item.embedUrl && item.embedUrl.includes('youtube.com/embed');
 
-        html += `<div class="yt-poster-wrap" id="${posterId}" onclick="playYTVideo('${posterId}','${autoplaySrc}')">
+        const wrapperClass = isYouTube ? 'yt-poster-wrap native' : 'yt-poster-wrap';
+        const iframeAttrs = isYouTube ? 'width="560" height="315"' : '';
+
+        html += `<div class="${wrapperClass}" id="${posterId}" onclick="playYTVideo('${posterId}','${autoplaySrc}')">
           ${thumb ? `<img src="${thumb}" alt="Video thumbnail" onerror="this.style.display='none'">` : ''}
           <div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <iframe
+          <iframe ${iframeAttrs}
             src=""
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
