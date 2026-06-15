@@ -590,14 +590,6 @@ function renderFront() {
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
             <div class="byline">${h(item.date || 'Archive')}</div>
-          </div>`;
-        } else {
-          html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
-            <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
-            <div class="tag ${tagClass}">${tag}</div>
-            <h2 class="headline">${h(item.title)}</h2>
-            ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
-            <div class="byline">${h(item.date || 'Archive')}</div>
             <div class="read-time">${readTimeLabel}</div>
           </div>`;
         }
