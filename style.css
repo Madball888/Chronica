@@ -1697,7 +1697,7 @@ select { font-family: var(--font-ui); font-size: 13px; }
   border-radius: 2px;
 }
 
-yt-poster-wrap img {
+.yt-poster-wrap img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1725,30 +1725,30 @@ yt-poster-wrap img {
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
-yt-poster-wrap:hover .yt-play-btn {
+.yt-poster-wrap:hover .yt-play-btn {
   background: #ff0000;
   transform: translate(-50%, -50%) scale(1.08);
 }
 
-yt-play-btn svg {
+.yt-play-btn svg {
   width: 30px;
   height: 30px;
   fill: #fff;
   margin-left: 5px;
 }
 
-yt-poster-wrap.playing {
+.yt-poster-wrap.playing {
   cursor: default;
 }
 
-yt-poster-wrap.playing img,
+.yt-poster-wrap.playing img,
 .yt-poster-wrap.playing .yt-play-btn { display: none; }
 
-yt-poster-wrap.playing iframe {
+.yt-poster-wrap.playing iframe {
   display: block !important;
 }
 
-yt-poster-wrap iframe {
+.yt-poster-wrap iframe {
   display: none;
   position: absolute;
   inset: 0;
