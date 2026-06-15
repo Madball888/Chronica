@@ -20,6 +20,7 @@
   --font-display: 'Playfair Display', serif;
   --font-body: 'Source Serif 4', serif;
   --font-ui: 'DM Sans', sans-serif;
+  --default-card-image-height: 200px;
 }
 
 body {
@@ -361,8 +362,8 @@ body {
 .video-card:hover { background: var(--parchment); }
 
 .video-thumb {
-  width: 80px;
-  height: 56px;
+  width: 100%;
+  height: var(--default-card-image-height);
   background: var(--stone);
   border-radius: 2px;
   flex-shrink: 0;
@@ -685,9 +686,9 @@ body {
 
 .card-cover-image {
   width: 100%;
-  height: 160px;
+  height: var(--default-card-image-height);
   object-fit: cover;
-  object-position: center top;
+  object-position: center;
   display: block;
   margin-bottom: 0.75rem;
   border-bottom: 2px solid var(--rule-light);
@@ -1313,6 +1314,14 @@ select { font-family: var(--font-ui); font-size: 13px; }
   border-right: 0.5px solid var(--rule);
 }
 
+.hero-image-wrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--stone);
+  min-height: 360px;
+  height: 100%;
+}
+
 .hero-kicker {
   font-family: var(--font-ui);
   font-size: 9px;
@@ -1537,9 +1546,9 @@ select { font-family: var(--font-ui); font-size: 13px; }
 
 .video-cover-wrap img {
   width: 100%;
-  height: 160px;
+  height: var(--default-card-image-height);
   object-fit: cover;
-  object-position: center top;
+  object-position: center;
   display: block;
   border-bottom: 2px solid var(--rule-light);
   transition: opacity 0.2s;
