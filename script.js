@@ -33,6 +33,16 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('login-overlay')) closeLogin();
 }
 
+function estimateReadTime(text, wpm = 230) {
+  const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.ceil(words / wpm));
+  return {
+    words,
+    minutes,
+    label: `${minutes} min read`
+  };
+}
+
 function attemptLogin() {
   const pw = document.getElementById('login-pw').value;
   if (pw === ADMIN_PASSWORD) {
@@ -562,6 +572,7 @@ function renderFront() {
         const tagClass = isVideo ? 'tag-video' : '';
         const cardClass = isVideo ? 'video-card' : 'article-card';
         const cat = (item.category || '').replace(/"/g, '&quot;');
+        const readTimeLabel = !isVideo ? (item.readTimeLabel || estimateReadTime(item.body).label) : '';
 
         const imgUrl = item.image || getFallbackImage(item, 1200, 800);
         if (isVideo) {
@@ -579,6 +590,15 @@ function renderFront() {
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
             <div class="byline">${h(item.date || 'Archive')}</div>
+          </div>`;
+        } else {
+          html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
+            <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
+            <div class="tag ${tagClass}">${tag}</div>
+            <h2 class="headline">${h(item.title)}</h2>
+            ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
+            <div class="byline">${h(item.date || 'Archive')}</div>
+            <div class="read-time">${readTimeLabel}</div>
           </div>`;
         }
       });
@@ -646,6 +666,7 @@ function renderReader(item) {
         <h1 class="reader-title">${h(item.title)}</h1>
         ${item.subtitle ? `<p class="reader-deck">${h(item.subtitle)}</p>` : ''}
         <div class="byline">${item.author ? 'By ' + h(item.author) + ' &nbsp;·&nbsp; ' : ''}${h(item.date || 'Archive')}</div>
+        ${item.type !== 'video' ? `<div class="read-time">${item.readTimeLabel || estimateReadTime(item.body).label}</div>` : ''}
       </div>
       ${item.image ? `
       <div class="featured-image-wrap">
@@ -984,6 +1005,10 @@ function publishContent() {
         return;
       }
       item.body = body;
+      const readTime = estimateReadTime(body);
+      item.readTimeLabel = readTime.label;
+      item.readTimeMinutes = readTime.minutes;
+      item.wordCount = readTime.words;
     } else {
       const url = document.getElementById('content-video-url').value.trim();
       if (!url) {

@@ -385,6 +385,14 @@ body {
   font-weight: 500;
 }
 
+.read-time {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
 .tag-video { color: #185FA5; }
 
 .h2.headline {
