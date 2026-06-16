@@ -726,14 +726,11 @@ function renderFront() {
         const imgUrl = item.image || getFallbackImage(item, 1200, 800);
         const readCount = getReadCount(item.isSample ? ('sample-' + item.id) : item.id);
         const readCountHtml = readCount > 0 ? `<span class="card-read-count">👁 ${formatReadCount(readCount)}</span>` : '';
-        const seriesInfo = item.isSample ? getSeriesForArticle(item.id) : null;
-        const seriesBadge = seriesInfo ? `<span class="card-series-badge">Part ${seriesInfo.partNumber}/${seriesInfo.total} · ${h(seriesInfo.series.title)}</span>` : '';
         const shareBtn = `<button class="card-share-btn" onclick="event.stopPropagation();cardShare('${item.isSample ? 'sample-' + item.id : item.id}','${h(item.title).replace(/'/g,"\\'")}')">↗</button>`;
 
         if (isVideo) {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
             <div class="video-cover-wrap"><img src="${imgUrl}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>
-            ${seriesBadge}
             <div class="tag tag-video">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
@@ -742,7 +739,6 @@ function renderFront() {
         } else {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
             <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
-            ${seriesBadge}
             <div class="tag ${tagClass}">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
@@ -900,9 +896,8 @@ function renderReader(item) {
       html += `</div></div>`;
     }
 
-    // Series trail
-    const seriesHtml = _editingIsSample ? renderSeriesTrail(_editingSampleId || item.id) : '';
-    if (seriesHtml) html += seriesHtml;
+    // Series trail removed per request
+    const seriesHtml = '';
 
     const totalReads = getReadCount(_editingIsSample ? ('sample-' + (item.id || _editingSampleId)) : item.id);
     const readsDisplay = totalReads > 0 ? `<span class="reader-read-count">👁 ${formatReadCount(totalReads)}</span>` : '';
@@ -1444,6 +1439,11 @@ function deleteMember(email) {
 
 function getSample(id) { 
   try {
+    // Prefer any user-edited copy stored in state.contents that maps to this sample id
+    if (state && Array.isArray(state.contents)) {
+      const overridden = state.contents.find(c => c._sampleId === id);
+      if (overridden) return overridden;
+    }
     return SAMPLES[id] || null;
   } catch (error) {
     console.error('Error getting sample:', error);
@@ -2138,6 +2138,13 @@ async function renderThisDayWidget() {
     insertThisDayWidget(dayMonth, events);
   } catch(e) {
     console.error('TDIH error:', e);
+    // Fallback: show a small static set of events so the widget is visible
+    const fallbackEvents = [
+      { year: '44 BC', event: 'Julius Caesar assassinated in Rome', era: 'ancient' },
+      { year: '1453', event: 'Fall of Constantinople to the Ottoman Empire', era: 'medieval' },
+      { year: '1944', event: 'Allied landings in Normandy (D-Day)', era: 'modern' }
+    ];
+    try { insertThisDayWidget(dayMonth, fallbackEvents); } catch (ie) { console.error('TDIH fallback failed', ie); }
   }
 }
 
@@ -2171,60 +2178,10 @@ function insertThisDayWidget(dayMonth, events) {
   if (frontPage) frontPage.parentNode.insertBefore(widget, frontPage);
 }
 
-// ── Series System ────────────────────────────────────────────────
-const SERIES_LIST = {
-  'fall-of-empires': {
-    title: 'The Fall of Empires',
-    description: 'A five-part series examining the collapse of history\'s greatest powers.',
-    parts: ['fall-of-rome', 'constantinople', 'mongol', 'napoleon', 'end-of-wwii']
-  },
-  'war-and-peace': {
-    title: 'War & Peace',
-    description: 'How the great conflicts of history shaped the world we live in.',
-    parts: ['causes-of-wwi', 'battle-of-verdun', 'life-in-trenches', 'd-day-landings', 'end-of-wwii']
-  }
-};
-
-// Assign series to samples
-function getSeriesForArticle(id) {
-  for (const [seriesId, series] of Object.entries(SERIES_LIST)) {
-    const idx = series.parts.indexOf(id);
-    if (idx !== -1) return { seriesId, series, partNumber: idx + 1, total: series.parts.length };
-  }
-  return null;
-}
-
-function renderSeriesTrail(articleId) {
-  const info = getSeriesForArticle(articleId);
-  if (!info) return '';
-  const { series, partNumber, total, seriesId } = info;
-  const parts = series.parts.map((pid, i) => {
-    const s = getSample(pid);
-    const label = s ? h(s.title) : `Part ${i + 1}`;
-    const isCurrent = pid === articleId;
-    return `<div class="series-part ${isCurrent ? 'series-part-current' : ''}" onclick="${isCurrent ? '' : `readSample('${pid}')`}" style="${isCurrent ? '' : 'cursor:pointer'}">
-      <span class="series-part-num">${i + 1}</span>
-      <span class="series-part-title">${label}</span>
-      ${isCurrent ? '<span class="series-part-badge">Reading now</span>' : ''}
-    </div>`;
-  }).join('');
-
-  const nextId = series.parts[partNumber]; // partNumber is already 0-indexed+1
-  const nextSample = nextId ? getSample(nextId) : null;
-
-  return `<div class="series-trail">
-    <div class="series-trail-header">
-      <span class="series-trail-icon">📚</span>
-      <span class="series-trail-name">${h(series.title)}</span>
-      <span class="series-trail-count">Part ${partNumber} of ${total}</span>
-    </div>
-    <div class="series-parts">${parts}</div>
-    ${nextSample ? `<div class="series-next" onclick="readSample('${series.parts[partNumber]}')">
-      <span class="series-next-label">Next in series →</span>
-      <span class="series-next-title">${h(nextSample.title)}</span>
-    </div>` : '<div class="series-complete">✦ You have reached the end of this series</div>'}
-  </div>`;
-}
+// Series system disabled per request (no series UI)
+const SERIES_LIST = {};
+function getSeriesForArticle(id) { return null; }
+function renderSeriesTrail(articleId) { return ''; }
 
 // ── Era Article Counts ───────────────────────────────────────────
 function getEraCount(eraId) {
