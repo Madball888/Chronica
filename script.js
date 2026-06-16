@@ -280,6 +280,8 @@ function openInlineEditor() {
   document.getElementById('em-title').value    = _editingItem.title    || '';
   document.getElementById('em-subtitle').value = _editingItem.subtitle || '';
   document.getElementById('em-author').value   = _editingItem.author   || '';
+  document.getElementById('em-image-url').value = _editingItem.image || '';
+  document.getElementById('em-video-url').value = _editingItem.videoUrl || '';
   document.getElementById('em-body').value     = _editingItem.body     || '';
   document.getElementById('edit-modal-overlay').classList.add('open');
 }
@@ -300,12 +302,18 @@ function saveInlineEdit() {
   const body     = document.getElementById('em-body').value.trim();
   if (!title) { toast('Title cannot be empty.'); return; }
 
+  const imageUrl = document.getElementById('em-image-url').value.trim();
+  const videoUrl = document.getElementById('em-video-url').value.trim();
+
   if (_editingIsSample) {
     const existing = state.contents.find(c => c._sampleId === _editingSampleId);
     if (existing) {
       existing.title    = title;
       existing.subtitle = subtitle;
       existing.author   = author;
+      existing.image    = imageUrl || existing.image;
+      existing.videoUrl = videoUrl || existing.videoUrl;
+      existing.embedUrl = videoUrl ? getEmbedUrl(videoUrl) : existing.embedUrl;
       existing.body     = body;
       _editingItem = existing;
     } else {
@@ -313,7 +321,13 @@ function saveInlineEdit() {
         ..._editingItem,
         id: Date.now(),
         _sampleId: _editingSampleId,
-        title, subtitle, author, body,
+        title,
+        subtitle,
+        author,
+        image: imageUrl || _editingItem.image,
+        videoUrl: videoUrl || _editingItem.videoUrl,
+        embedUrl: videoUrl ? getEmbedUrl(videoUrl) : _editingItem.embedUrl,
+        body,
         isSample: false
       };
       state.contents.push(newItem);
@@ -325,7 +339,15 @@ function saveInlineEdit() {
     renderFront();
   } else {
     const item = state.contents.find(c => c.id == _editingItem.id);
-    if (item) { item.title = title; item.subtitle = subtitle; item.author = author; item.body = body; }
+    if (item) {
+      item.title    = title;
+      item.subtitle = subtitle;
+      item.author   = author;
+      item.image    = imageUrl || item.image;
+      item.videoUrl = videoUrl || item.videoUrl;
+      item.embedUrl = videoUrl ? getEmbedUrl(videoUrl) : item.embedUrl;
+      item.body     = body;
+    }
     save();
     renderFront();
   }
@@ -579,6 +601,14 @@ function renderFront() {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
             <div class="video-cover-wrap"><img src="${imgUrl}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>
             <div class="tag tag-video">${tag}</div>
+            <h2 class="headline">${h(item.title)}</h2>
+            ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
+            <div class="byline">${h(item.date || 'Archive')}</div>
+          </div>`;
+        } else {
+          html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
+            <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
+            <div class="tag ${tagClass}">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
             <div class="byline">${h(item.date || 'Archive')}</div>
