@@ -277,12 +277,40 @@ function openInlineEditor() {
     return;
   }
 
-  document.getElementById('em-title').value    = _editingItem.title    || '';
-  document.getElementById('em-subtitle').value = _editingItem.subtitle || '';
-  document.getElementById('em-author').value   = _editingItem.author   || '';
-  document.getElementById('em-image-url').value = _editingItem.image || '';
-  document.getElementById('em-video-url').value = _editingItem.videoUrl || '';
-  document.getElementById('em-body').value     = _editingItem.body     || '';
+  const item = _editingItem;
+  const isVideo = item.type === 'video';
+
+  document.getElementById('em-title').value    = item.title    || '';
+  document.getElementById('em-subtitle').value = item.subtitle || '';
+  document.getElementById('em-author').value   = item.author   || '';
+  document.getElementById('em-body').value     = item.body     || '';
+
+  // Show/hide body section
+  document.getElementById('em-body-section').style.display = isVideo ? 'none' : '';
+
+  // Image section
+  const currentImgWrap = document.getElementById('em-current-image-wrap');
+  const currentImg = document.getElementById('em-current-image');
+  if (item.image) {
+    currentImg.src = item.image;
+    currentImgWrap.style.display = '';
+  } else {
+    currentImgWrap.style.display = 'none';
+  }
+  clearEmImage();
+
+  // Video section
+  document.getElementById('em-video-section').style.display = isVideo ? '' : 'none';
+  if (isVideo) {
+    document.getElementById('em-video-url').value = item.videoUrl || '';
+    document.getElementById('em-video-preview-wrap').style.display = 'none';
+    document.getElementById('em-video-preview-frame').src = '';
+    // Update modal title
+    document.querySelector('.edit-modal-title').textContent = '✎ Edit Video';
+  } else {
+    document.querySelector('.edit-modal-title').textContent = '✎ Edit Article';
+  }
+
   document.getElementById('edit-modal-overlay').classList.add('open');
 }
 
@@ -300,10 +328,15 @@ function saveInlineEdit() {
   const subtitle = document.getElementById('em-subtitle').value.trim();
   const author   = document.getElementById('em-author').value.trim();
   const body     = document.getElementById('em-body').value.trim();
+  const isVideo  = _editingItem.type === 'video';
   if (!title) { toast('Title cannot be empty.'); return; }
 
-  const imageUrl = document.getElementById('em-image-url').value.trim();
-  const videoUrl = document.getElementById('em-video-url').value.trim();
+  // Get new image if uploaded
+  const newImagePreview = document.getElementById('em-image-preview');
+  const newImage = (newImagePreview && newImagePreview.src && newImagePreview.src.startsWith('data:')) ? newImagePreview.src : null;
+
+  // Get new video URL if changed
+  const newVideoUrl = isVideo ? document.getElementById('em-video-url').value.trim() : null;
 
   if (_editingIsSample) {
     const existing = state.contents.find(c => c._sampleId === _editingSampleId);
@@ -311,25 +344,21 @@ function saveInlineEdit() {
       existing.title    = title;
       existing.subtitle = subtitle;
       existing.author   = author;
-      existing.image    = imageUrl || existing.image;
-      existing.videoUrl = videoUrl || existing.videoUrl;
-      existing.embedUrl = videoUrl ? getEmbedUrl(videoUrl) : existing.embedUrl;
-      existing.body     = body;
+      if (!isVideo) existing.body = body;
+      if (newImage) existing.image = newImage;
+      if (isVideo && newVideoUrl) { existing.videoUrl = newVideoUrl; existing.embedUrl = getEmbedUrl(newVideoUrl); }
       _editingItem = existing;
     } else {
       const newItem = {
         ..._editingItem,
         id: Date.now(),
         _sampleId: _editingSampleId,
-        title,
-        subtitle,
-        author,
-        image: imageUrl || _editingItem.image,
-        videoUrl: videoUrl || _editingItem.videoUrl,
-        embedUrl: videoUrl ? getEmbedUrl(videoUrl) : _editingItem.embedUrl,
-        body,
+        title, subtitle, author,
+        body: isVideo ? _editingItem.body : body,
         isSample: false
       };
+      if (newImage) newItem.image = newImage;
+      if (isVideo && newVideoUrl) { newItem.videoUrl = newVideoUrl; newItem.embedUrl = getEmbedUrl(newVideoUrl); }
       state.contents.push(newItem);
       _editingItem = newItem;
       currentArticleId = newItem.id;
@@ -340,13 +369,10 @@ function saveInlineEdit() {
   } else {
     const item = state.contents.find(c => c.id == _editingItem.id);
     if (item) {
-      item.title    = title;
-      item.subtitle = subtitle;
-      item.author   = author;
-      item.image    = imageUrl || item.image;
-      item.videoUrl = videoUrl || item.videoUrl;
-      item.embedUrl = videoUrl ? getEmbedUrl(videoUrl) : item.embedUrl;
-      item.body     = body;
+      item.title = title; item.subtitle = subtitle; item.author = author;
+      if (!isVideo) item.body = body;
+      if (newImage) item.image = newImage;
+      if (isVideo && newVideoUrl) { item.videoUrl = newVideoUrl; item.embedUrl = getEmbedUrl(newVideoUrl); }
     }
     save();
     renderFront();
@@ -355,6 +381,43 @@ function saveInlineEdit() {
   closeEditModal();
   renderReader(_editingItem);
   toast('Article saved!');
+}
+
+function handleEmImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Image too large — max 5MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('em-image-preview').src = e.target.result;
+    document.getElementById('em-image-preview-wrap').style.display = 'block';
+    document.getElementById('em-image-upload-area').style.borderColor = 'var(--accent)';
+    document.getElementById('em-image-upload-text').textContent = '✓ New image ready — save to apply';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearEmImage() {
+  document.getElementById('em-image-input').value = '';
+  document.getElementById('em-image-preview').src = '';
+  document.getElementById('em-image-preview-wrap').style.display = 'none';
+  document.getElementById('em-image-upload-area').style.borderColor = '';
+  document.getElementById('em-image-upload-text').textContent = 'Click to upload a new cover image';
+}
+
+function previewEmVideo(url) {
+  try {
+    const embedUrl = getEmbedUrl(url.trim());
+    const wrap = document.getElementById('em-video-preview-wrap');
+    const frame = document.getElementById('em-video-preview-frame');
+    if (embedUrl && (embedUrl.includes('youtube.com/embed') || embedUrl.includes('player.vimeo.com'))) {
+      frame.src = embedUrl;
+      wrap.style.display = 'block';
+    } else {
+      frame.src = '';
+      wrap.style.display = 'none';
+    }
+  } catch(e) { console.error('Em video preview error:', e); }
 }
 
 function playYTVideo(wrapperId, src) {
@@ -369,16 +432,7 @@ function playYTVideo(wrapperId, src) {
 }
 
 const STORE = 'chronica-v2';
-function loadState() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE) || '{"contents":[],"members":[]}');
-  } catch (error) {
-    console.warn('Resetting corrupted localStorage state for Chronica:', error);
-    localStorage.removeItem(STORE);
-    return { contents: [], members: [] };
-  }
-}
-let state = loadState();
+let state = JSON.parse(localStorage.getItem(STORE) || '{"contents":[],"members":[]}');
 let previousView = 'front';
 let currentView = 'front';
 let currentArticleTitle = '';
@@ -397,6 +451,10 @@ function init() {
   renderHero();
   initProgressBar();
   syncNavHighlight();
+  // Auto-generate 2-3 articles per day
+  setTimeout(autoGenerateArticles, 1200);
+  // This Day in History widget
+  setTimeout(renderThisDayWidget, 800);
 }
 
 function activateView(name) {
@@ -480,6 +538,7 @@ function showView(name) {
     }
   }
   if (name === 'members') renderMembersPage();
+  if (name === 'about') { /* static, nothing to render */ }
 }
 
 function goBack() {
@@ -508,6 +567,11 @@ function filterCategory(category, btn) {
 
 function applyFilters() {
   document.querySelectorAll('.era-section').forEach(section => {
+    // Always show latest section regardless of era filter
+    if (section.classList.contains('latest-section')) {
+      section.style.display = state.contents.length ? '' : 'none';
+      return;
+    }
     const eraId = section.dataset.era;
     const eraVisible = activeEra === 'all' || activeEra === eraId;
     let anyCardVisible = false;
@@ -547,6 +611,58 @@ const ERAS = [
   { id: 'modern', label: 'Modern Era', years: '1800–1914', icon: '🏭', articles: ['industrial-revolution', 'german-unification', 'american-civil-war', 'scramble-for-africa', 'age-of-steam'] },
   { id: 'wwii', label: 'World Wars', years: '1914–1945', icon: '✈', articles: ['ww2-video', 'causes-of-wwi', 'battle-of-verdun', 'life-in-trenches', 'd-day-landings', 'end-of-wwii'] },
 ];
+
+function getLatestArticles(limit = 6) {
+  // Returns the most recently published user articles (by id = timestamp)
+  const sorted = [...state.contents].sort((a, b) => b.id - a.id);
+  return sorted.slice(0, limit);
+}
+
+function renderLatestSection() {
+  const items = getLatestArticles(6);
+  if (!items.length) return '';
+
+  let html = `<div class="era-section latest-section" id="era-latest" data-era="latest">
+    <div class="era-header era-header-latest">
+      <span class="era-icon">📰</span>
+      <span class="era-name">Latest Articles</span>
+      <span class="era-years latest-badge">Just Published</span>
+    </div>
+    <div class="era-grid">`;
+
+  items.forEach(item => {
+    const isVideo = item.type === 'video';
+    const clickHandler = `readContent(${item.id})`;
+    const tag = isVideo ? '▶ Video' : h(item.category || 'Article');
+    const tagClass = isVideo ? 'tag-video' : '';
+    const cardClass = isVideo ? 'video-card' : 'article-card';
+    const cat = (item.category || '').replace(/"/g, '&quot;');
+    const readTimeLabel = !isVideo ? (item.readTimeLabel || estimateReadTime(item.body).label) : '';
+    const imgUrl = item.image || getFallbackImage(item, 1200, 800);
+
+    if (isVideo) {
+      html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
+        <div class="video-cover-wrap"><img src="${imgUrl}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>
+        <div class="tag tag-video">${tag}</div>
+        <h2 class="headline">${h(item.title)}</h2>
+        ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
+        <div class="byline">${h(item.date || 'Archive')}</div>
+      </div>`;
+    } else {
+      html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
+        <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
+        <div class="tag ${tagClass}">${tag}</div>
+        <h2 class="headline">${h(item.title)}</h2>
+        ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
+        <div class="byline">${h(item.date || 'Archive')}</div>
+        <div class="read-time">${readTimeLabel}</div>
+      </div>`;
+    }
+  });
+
+  html += `</div></div>`;
+  return html;
+}
 
 const ERA_CATEGORIES = {
   'ancient':      ['Ancient World'],
@@ -589,9 +705,11 @@ function renderFront() {
 
       if (!allArticles.length) return;
 
+      const eraCount = getEraCount(era.id);
       html += `<div class="era-section" id="era-${era.id}" data-era="${era.id}">
         <div class="era-header">
           <span class="era-name">${era.label}</span>
+          <span class="era-count">${eraCount} article${eraCount !== 1 ? 's' : ''}</span>
           <span class="era-years">${era.years}</span>
         </div>
         <div class="era-grid">`;
@@ -606,21 +724,29 @@ function renderFront() {
         const readTimeLabel = !isVideo ? (item.readTimeLabel || estimateReadTime(item.body).label) : '';
 
         const imgUrl = item.image || getFallbackImage(item, 1200, 800);
+        const readCount = getReadCount(item.isSample ? ('sample-' + item.id) : item.id);
+        const readCountHtml = readCount > 0 ? `<span class="card-read-count">👁 ${formatReadCount(readCount)}</span>` : '';
+        const seriesInfo = item.isSample ? getSeriesForArticle(item.id) : null;
+        const seriesBadge = seriesInfo ? `<span class="card-series-badge">Part ${seriesInfo.partNumber}/${seriesInfo.total} · ${h(seriesInfo.series.title)}</span>` : '';
+        const shareBtn = `<button class="card-share-btn" onclick="event.stopPropagation();cardShare('${item.isSample ? 'sample-' + item.id : item.id}','${h(item.title).replace(/'/g,"\\'")}')">↗</button>`;
+
         if (isVideo) {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
             <div class="video-cover-wrap"><img src="${imgUrl}" alt="${h(item.title)}" onerror="this.closest('.video-cover-wrap').style.display='none'" loading="lazy"><div class="video-play-badge">▶ Video</div></div>
+            ${seriesBadge}
             <div class="tag tag-video">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
-            <div class="byline">${h(item.date || 'Archive')}</div>
+            <div class="card-footer"><div class="byline">${h(item.date || 'Archive')}</div>${readCountHtml}${shareBtn}</div>
           </div>`;
         } else {
           html += `<div class="${cardClass}" onclick="${clickHandler}" data-category="${cat}">
             <img class="card-cover-image" src="${imgUrl}" alt="${h(item.title)}" onerror="this.style.display='none'" loading="lazy">
+            ${seriesBadge}
             <div class="tag ${tagClass}">${tag}</div>
             <h2 class="headline">${h(item.title)}</h2>
             ${item.subtitle ? `<p class="deck">${h(item.subtitle)}</p>` : ''}
-            <div class="byline">${h(item.date || 'Archive')}</div>
+            <div class="card-footer"><div class="byline">${h(item.date || 'Archive')}</div>${readCountHtml}${shareBtn}</div>
             <div class="read-time">${readTimeLabel}</div>
           </div>`;
         }
@@ -629,7 +755,8 @@ function renderFront() {
       html += `</div></div>`;
     });
 
-    container.innerHTML = html;
+    const latestHtml = renderLatestSection();
+    container.innerHTML = latestHtml + html;
     applyFilters();
     if (searchQuery) applySearchFilter();
 
@@ -637,6 +764,12 @@ function renderFront() {
     console.error('Error rendering front page:', error);
     container.innerHTML = '<div class="empty-state" style="padding:4rem;text-align:center;color:var(--accent);">Error loading content. Please refresh.</div>';
   }
+}
+
+function cardShare(id, title) {
+  currentArticleId = id;
+  currentArticleTitle = title;
+  openShareModal();
 }
 
 function readContent(id) {
@@ -648,6 +781,7 @@ function readContent(id) {
     }
     currentArticleId = id;
     currentArticleTitle = item.title;
+    incrementReadCount(id);
     _editingItem = item;
     _editingIsSample = false;
     _editingSampleId = null;
@@ -669,6 +803,7 @@ function readSample(id) {
     currentArticleId = 'sample-' + id;
     currentArticleTitle = item.title;
     item.id = id;
+    incrementReadCount('sample-' + id);
     _editingItem = item;
     _editingIsSample = true;
     _editingSampleId = id;
@@ -765,9 +900,17 @@ function renderReader(item) {
       html += `</div></div>`;
     }
 
+    // Series trail
+    const seriesHtml = _editingIsSample ? renderSeriesTrail(_editingSampleId || item.id) : '';
+    if (seriesHtml) html += seriesHtml;
+
+    const totalReads = getReadCount(_editingIsSample ? ('sample-' + (item.id || _editingSampleId)) : item.id);
+    const readsDisplay = totalReads > 0 ? `<span class="reader-read-count">👁 ${formatReadCount(totalReads)}</span>` : '';
+
     html += `
       <div class="share-bar">
         <span class="share-label">Share this article</span>
+        ${readsDisplay}
         <button class="btn btn-ink btn-sm" onclick="shareTwitter()">🐦 Twitter</button>
         <button class="btn btn-ink btn-sm" onclick="shareWhatsapp()">💬 WhatsApp</button>
         <button class="btn btn-ink btn-sm" onclick="shareEmail()">✉ Email</button>
@@ -990,6 +1133,15 @@ function clearForm() {
       if (el) el.value = '';
     });
     document.getElementById('content-type').value = 'article';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('admin-form-title').textContent = 'Publish Content';
+    document.getElementById('publish-btn').textContent = 'Publish';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+    const uploadText = document.querySelector('.image-upload-text');
+    if (uploadText) uploadText.textContent = 'Click to upload a cover image';
+    const videoHint = document.querySelector('#video-fields .form-hint');
+    if (videoHint) videoHint.textContent = 'Paste a YouTube or Vimeo link — a preview will appear below';
+    clearImage();
     toggleContentType();
   } catch (error) {
     console.error('Error clearing form:', error);
@@ -1005,22 +1157,64 @@ function publishContent() {
     const category = document.getElementById('content-category').value;
     const era = document.getElementById('content-era').value;
     
+    const editId = document.getElementById('edit-id').value;
+    const uploadedImage = getUploadedImage();
+
+    if (editId) {
+      // Editing existing item
+      const existing = state.contents.find(c => c.id == editId);
+      if (!existing) { toast('Article not found.'); return; }
+      existing.type = type;
+      existing.title = title;
+      existing.subtitle = subtitle;
+      existing.author = author;
+      existing.category = category;
+      existing.era = era;
+      // Replace image only if a new one was uploaded
+      if (uploadedImage) existing.image = uploadedImage;
+      if (type === 'article') {
+        existing.body = document.getElementById('content-body').value.trim();
+        const readTime = estimateReadTime(existing.body);
+        existing.readTimeLabel = readTime.label;
+        existing.readTimeMinutes = readTime.minutes;
+        existing.wordCount = readTime.words;
+      } else {
+        const url = document.getElementById('content-video-url').value.trim();
+        if (!url) { toast('Please enter a video URL.'); return; }
+        // Replace video — old embedUrl is overwritten
+        existing.videoUrl = url;
+        existing.embedUrl = getEmbedUrl(url);
+        existing.videoDesc = document.getElementById('content-video-desc').value.trim();
+      }
+      save();
+      clearForm();
+      document.getElementById('edit-id').value = '';
+      document.getElementById('admin-form-title').textContent = 'Publish Content';
+      document.getElementById('publish-btn').textContent = 'Publish';
+      document.getElementById('cancel-edit-btn').style.display = 'none';
+      toast('✓ Changes saved!');
+      setTimeout(() => showView('front'), 800);
+      return;
+    }
+
     if (!title) {
       toast('Please enter a title.');
       return;
     }
-    
+
     const item = {
-      id: Date.now(), 
-      type, 
-      title, 
-      subtitle, 
-      author, 
-      category, 
+      id: Date.now(),
+      type,
+      title,
+      subtitle,
+      author,
+      category,
       era,
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
     };
-    
+
+    if (uploadedImage) item.image = uploadedImage;
+
     if (type === 'article') {
       const body = document.getElementById('content-body').value.trim();
       if (!body) {
@@ -1038,13 +1232,13 @@ function publishContent() {
         toast('Please enter a video URL.');
         return;
       }
-      item.videoUrl = url; 
+      item.videoUrl = url;
       item.videoDesc = document.getElementById('content-video-desc').value.trim();
       item.embedUrl = getEmbedUrl(url);
     }
-    
+
     state.contents.unshift(item);
-    save(); 
+    save();
     clearForm();
     toast('✓ Published!');
     setTimeout(() => showView('front'), 1000);
@@ -1185,8 +1379,19 @@ function editContent(id) {
       document.getElementById('image-preview').src = item.image;
       document.getElementById('image-preview-wrap').style.display = 'block';
       document.getElementById('image-upload-area').style.borderColor = 'var(--accent)';
+      // Show "current image" note and replace indicator
+      const uploadText = document.querySelector('.image-upload-text');
+      if (uploadText) uploadText.textContent = 'Click to replace the current cover image';
     } else {
       clearImage();
+      const uploadText = document.querySelector('.image-upload-text');
+      if (uploadText) uploadText.textContent = 'Click to upload a cover image';
+    }
+
+    // For video type, show current video URL with replace hint
+    if (item.type === 'video') {
+      const videoHint = document.querySelector('#video-fields .form-hint');
+      if (videoHint) videoHint.textContent = 'Replace the URL below to swap the video entirely — the old one will be removed.';
     }
 
     document.getElementById('view-admin').scrollTop = 0;
@@ -1761,6 +1966,272 @@ function toast(msg) {
   } catch (error) {
     console.error('Error showing toast:', error);
   }
+}
+
+// ── Auto Article Generation ──────────────────────────────────────
+const AUTO_GEN_KEY = 'chronica-autogen-date';
+const AUTO_GEN_COUNT = 'chronica-autogen-count';
+
+const AUTO_GEN_TOPICS = [
+  { era: 'ancient', category: 'Ancient World', topics: ['Persian Empire', 'Alexander the Great', 'Ancient Athens', 'Julius Caesar', 'Cleopatra', 'The Colosseum', 'Spartans', 'Egyptian Religion'] },
+  { era: 'medieval', category: 'Medieval History', topics: ['The Crusades', 'Black Prince', 'Joan of Arc', 'Vikings in England', 'Magna Carta', 'Medieval Plague', 'Knights Templar', 'Byzantine Empire'] },
+  { era: 'early-modern', category: 'Early Modern', topics: ['Spanish Armada', 'Galileo Galilei', 'The Reformation', 'Thirty Years War', 'Age of Exploration', 'The Medicis', 'Ottoman Siege of Vienna', 'English Civil War'] },
+  { era: 'modern', category: 'Modern Era', topics: ['The French Revolution', 'Victorian Britain', 'The Suez Crisis', 'Rise of Japan', 'The Gold Rush', 'Darwin and Evolution', 'Crimean War', 'Meiji Restoration'] },
+  { era: 'wwii', category: 'World War II', topics: ['Battle of Britain', 'Stalingrad', 'The Holocaust', 'Pacific Theatre', 'Resistance Movements', 'Churchill and the War Cabinet', 'Atomic Bomb Decision', 'Fall of Berlin'] },
+];
+
+async function autoGenerateArticles() {
+  const today = new Date().toDateString();
+  const lastDate = localStorage.getItem(AUTO_GEN_KEY);
+  const countToday = parseInt(localStorage.getItem(AUTO_GEN_COUNT) || '0', 10);
+
+  if (lastDate === today && countToday >= 3) return; // already generated today
+
+  const toGenerate = lastDate === today ? (3 - countToday) : 3;
+  if (toGenerate <= 0) return;
+
+  toast('📰 Generating today\'s articles…');
+
+  // Pick random topics not already in state
+  const existingTitles = new Set(state.contents.map(c => c.title.toLowerCase()));
+  let picked = [];
+  const shuffled = AUTO_GEN_TOPICS.sort(() => Math.random() - 0.5);
+  for (const group of shuffled) {
+    for (const topic of group.topics.sort(() => Math.random() - 0.5)) {
+      if (picked.length >= toGenerate) break;
+      const slug = topic.toLowerCase();
+      if ([...existingTitles].some(t => t.includes(slug.split(' ')[0]))) continue;
+      picked.push({ ...group, topic });
+      existingTitles.add(slug);
+    }
+    if (picked.length >= toGenerate) break;
+  }
+
+  let generated = lastDate === today ? countToday : 0;
+
+  for (const pick of picked) {
+    try {
+      const prompt = `Write a Chronica history magazine article about: "${pick.topic}".
+
+Return ONLY valid JSON (no markdown, no backticks) with these exact fields:
+{
+  "title": "compelling headline",
+  "subtitle": "one-sentence deck (max 15 words)",
+  "author": "Chronica Editorial",
+  "body": "full article body (600-900 words). Use blank lines between paragraphs. Start sub-sections with ### Heading on its own line.",
+  "books": [
+    {"title": "...", "author": "...", "description": "one sentence annotation"},
+    {"title": "...", "author": "...", "description": "one sentence annotation"},
+    {"title": "...", "author": "...", "description": "one sentence annotation"}
+  ]
+}`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      const text = (data.content || []).map(b => b.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      const readTime = estimateReadTime(parsed.body);
+      const newItem = {
+        id: Date.now() + generated,
+        type: 'article',
+        title: parsed.title || pick.topic,
+        subtitle: parsed.subtitle || '',
+        author: parsed.author || 'Chronica Editorial',
+        body: parsed.body || '',
+        books: parsed.books || [],
+        category: pick.category,
+        era: pick.era,
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        readTimeLabel: readTime.label,
+        readTimeMinutes: readTime.minutes,
+        wordCount: readTime.words,
+        autoGenerated: true,
+      };
+
+      state.contents.unshift(newItem);
+      generated++;
+      save();
+    } catch (e) {
+      console.error('Auto-gen error:', e);
+    }
+  }
+
+  localStorage.setItem(AUTO_GEN_KEY, today);
+  localStorage.setItem(AUTO_GEN_COUNT, String(generated));
+
+  if (generated > 0) {
+    renderFront();
+    renderHero();
+    toast(`✓ ${generated} new article${generated > 1 ? 's' : ''} published today`);
+  }
+}
+
+// ── Read Counter ─────────────────────────────────────────────────
+const READ_COUNTS_KEY = 'chronica-read-counts';
+
+function getReadCounts() {
+  try { return JSON.parse(localStorage.getItem(READ_COUNTS_KEY) || '{}'); } catch { return {}; }
+}
+
+function incrementReadCount(articleId) {
+  const counts = getReadCounts();
+  counts[articleId] = (counts[articleId] || 0) + 1;
+  localStorage.setItem(READ_COUNTS_KEY, JSON.stringify(counts));
+  return counts[articleId];
+}
+
+function getReadCount(articleId) {
+  return getReadCounts()[articleId] || 0;
+}
+
+function formatReadCount(n) {
+  if (n === 0) return '';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k reads';
+  return n + (n === 1 ? ' read' : ' reads');
+}
+
+// ── This Day in History ──────────────────────────────────────────
+const TDIH_KEY = 'chronica-tdih';
+
+async function renderThisDayWidget() {
+  const wrap = document.getElementById('hero-wrap');
+  if (!wrap) return;
+
+  const today = new Date();
+  const dateStr = today.toDateString();
+  const dayMonth = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+
+  // Check cache
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(TDIH_KEY) || 'null'); } catch {}
+  if (cached && cached.date === dateStr && cached.events) {
+    insertThisDayWidget(dayMonth, cached.events);
+    return;
+  }
+
+  // Generate via API
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: `List 3 significant historical events that happened on ${dayMonth} in different years (spread across ancient, medieval/early-modern, and modern history). Return ONLY valid JSON array, no markdown:\n[{"year":"...","event":"one sentence description of what happened","era":"ancient|medieval|modern"}]` }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const events = JSON.parse(text);
+    localStorage.setItem(TDIH_KEY, JSON.stringify({ date: dateStr, events }));
+    insertThisDayWidget(dayMonth, events);
+  } catch(e) {
+    console.error('TDIH error:', e);
+  }
+}
+
+function insertThisDayWidget(dayMonth, events) {
+  const existing = document.getElementById('tdih-widget');
+  if (existing) existing.remove();
+
+  const eraIcon = { ancient: '⚱', medieval: '⚔', modern: '🏭', default: '📜' };
+
+  const widget = document.createElement('div');
+  widget.id = 'tdih-widget';
+  widget.className = 'tdih-widget';
+  widget.innerHTML = `
+    <div class="tdih-header">
+      <span class="tdih-icon">📅</span>
+      <span class="tdih-title">This Day in History</span>
+      <span class="tdih-date">${dayMonth}</span>
+    </div>
+    <div class="tdih-events">
+      ${events.map(ev => `
+        <div class="tdih-event">
+          <div class="tdih-year">${h(ev.year)}</div>
+          <div class="tdih-event-icon">${eraIcon[ev.era] || eraIcon.default}</div>
+          <div class="tdih-event-text">${h(ev.event)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  const frontPage = document.getElementById('front-page-content');
+  if (frontPage) frontPage.parentNode.insertBefore(widget, frontPage);
+}
+
+// ── Series System ────────────────────────────────────────────────
+const SERIES_LIST = {
+  'fall-of-empires': {
+    title: 'The Fall of Empires',
+    description: 'A five-part series examining the collapse of history\'s greatest powers.',
+    parts: ['fall-of-rome', 'constantinople', 'mongol', 'napoleon', 'end-of-wwii']
+  },
+  'war-and-peace': {
+    title: 'War & Peace',
+    description: 'How the great conflicts of history shaped the world we live in.',
+    parts: ['causes-of-wwi', 'battle-of-verdun', 'life-in-trenches', 'd-day-landings', 'end-of-wwii']
+  }
+};
+
+// Assign series to samples
+function getSeriesForArticle(id) {
+  for (const [seriesId, series] of Object.entries(SERIES_LIST)) {
+    const idx = series.parts.indexOf(id);
+    if (idx !== -1) return { seriesId, series, partNumber: idx + 1, total: series.parts.length };
+  }
+  return null;
+}
+
+function renderSeriesTrail(articleId) {
+  const info = getSeriesForArticle(articleId);
+  if (!info) return '';
+  const { series, partNumber, total, seriesId } = info;
+  const parts = series.parts.map((pid, i) => {
+    const s = getSample(pid);
+    const label = s ? h(s.title) : `Part ${i + 1}`;
+    const isCurrent = pid === articleId;
+    return `<div class="series-part ${isCurrent ? 'series-part-current' : ''}" onclick="${isCurrent ? '' : `readSample('${pid}')`}" style="${isCurrent ? '' : 'cursor:pointer'}">
+      <span class="series-part-num">${i + 1}</span>
+      <span class="series-part-title">${label}</span>
+      ${isCurrent ? '<span class="series-part-badge">Reading now</span>' : ''}
+    </div>`;
+  }).join('');
+
+  const nextId = series.parts[partNumber]; // partNumber is already 0-indexed+1
+  const nextSample = nextId ? getSample(nextId) : null;
+
+  return `<div class="series-trail">
+    <div class="series-trail-header">
+      <span class="series-trail-icon">📚</span>
+      <span class="series-trail-name">${h(series.title)}</span>
+      <span class="series-trail-count">Part ${partNumber} of ${total}</span>
+    </div>
+    <div class="series-parts">${parts}</div>
+    ${nextSample ? `<div class="series-next" onclick="readSample('${series.parts[partNumber]}')">
+      <span class="series-next-label">Next in series →</span>
+      <span class="series-next-title">${h(nextSample.title)}</span>
+    </div>` : '<div class="series-complete">✦ You have reached the end of this series</div>'}
+  </div>`;
+}
+
+// ── Era Article Counts ───────────────────────────────────────────
+function getEraCount(eraId) {
+  const sampleEra = ERAS.find(e => e.id === eraId);
+  const sampleCount = sampleEra ? sampleEra.articles.length : 0;
+  const userCount = state.contents.filter(c => c.era === eraId).length;
+  return sampleCount + userCount;
 }
 
 window.addEventListener('DOMContentLoaded', init);

@@ -61,6 +61,7 @@
     <button class="era-tab" onclick="filterEra('modern', this)">Modern Era</button>
     <button class="era-tab" onclick="filterEra('wwii', this)">World Wars</button>
     <button class="era-tab" onclick="showView('members')">Members</button>
+    <button class="era-tab" onclick="showView('about')">About</button>
   </nav>
   
   <nav class="category-nav" id="category-nav">
@@ -124,15 +125,38 @@
         <label class="edit-field-label">Author</label>
         <input type="text" id="em-author" placeholder="Author name…">
       </div>
-      <div>
-        <label class="edit-field-label">Cover Image URL</label>
-        <input type="url" id="em-image-url" placeholder="https://example.com/cover.jpg">
+      <!-- Cover Image replacement -->
+      <div id="em-image-section">
+        <label class="edit-field-label">Cover Image <span style="font-weight:400;letter-spacing:0">— upload to replace the current one</span></label>
+        <div id="em-current-image-wrap" style="display:none;margin-bottom:0.6rem;position:relative;">
+          <img id="em-current-image" src="" alt="Current cover" style="width:100%;max-height:160px;object-fit:cover;display:block;border:1px solid var(--rule);">
+          <div style="font-family:var(--font-ui);font-size:10px;color:var(--ink-faint);padding:4px 0;">Current image — upload below to replace it</div>
+        </div>
+        <div class="image-upload-area" id="em-image-upload-area" onclick="document.getElementById('em-image-input').click()">
+          <div class="image-upload-icon">📷</div>
+          <div class="image-upload-text" id="em-image-upload-text">Click to upload a new cover image</div>
+          <div class="image-upload-hint">JPG or JPEG · Max 5MB</div>
+          <input type="file" id="em-image-input" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleEmImageUpload(this)">
+        </div>
+        <div id="em-image-preview-wrap" style="display:none;margin-top:0.5rem;position:relative;">
+          <img id="em-image-preview" src="" alt="New cover preview" style="width:100%;max-height:160px;object-fit:cover;display:block;border:1px solid var(--rule);">
+          <button onclick="clearEmImage()" style="position:absolute;top:6px;right:6px;background:var(--ink);color:var(--white);border:none;padding:3px 8px;cursor:pointer;font-size:11px;">✕ Remove</button>
+        </div>
       </div>
-      <div>
-        <label class="edit-field-label">Video URL</label>
-        <input type="url" id="em-video-url" placeholder="https://www.youtube.com/watch?v=…">
+
+      <!-- Video URL replacement (only shown for video type) -->
+      <div id="em-video-section" style="display:none;">
+        <label class="edit-field-label">Replace Video URL</label>
+        <input type="url" id="em-video-url" placeholder="https://www.youtube.com/watch?v=…" oninput="previewEmVideo(this.value)">
+        <div class="edit-hint">Paste a new YouTube or Vimeo URL to replace the current video.</div>
+        <div id="em-video-preview-wrap" style="display:none;margin-top:0.6rem;">
+          <div style="position:relative;padding-bottom:56.25%;height:0;background:var(--stone);border-radius:2px;overflow:hidden;">
+            <iframe id="em-video-preview-frame" src="" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+          </div>
+        </div>
       </div>
-      <div>
+
+      <div id="em-body-section">
         <label class="edit-field-label">Body <span style="font-weight:400;letter-spacing:0">(use ### for headings, blank line between paragraphs)</span></label>
         <textarea id="em-body" placeholder="Article body…"></textarea>
         <div class="edit-hint">Tip: Start a line with <code>### </code> to make it a section heading.</div>
@@ -343,6 +367,102 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ── About View ─────────────────────────────────────────────── -->
+<div class="view" id="view-about">
+  <div class="about-page">
+    <div class="about-hero">
+      <div class="about-hero-inner">
+        <div class="about-pretitle">Est. Anno Domini MMXXVI</div>
+        <h1 class="about-title">About Chronica</h1>
+        <p class="about-lead">A magazine dedicated to the stories, turning points, and forgotten corners of human history — written for the curious, not the credentialed.</p>
+      </div>
+    </div>
+
+    <div class="about-body">
+      <div class="about-section">
+        <h2 class="about-section-title">Our Mission</h2>
+        <p>Chronica exists because history is the greatest story ever told — and most of it goes untold. We believe that understanding the past is not an academic exercise but a human necessity. Every war, every empire, every plague, every revolution contains lessons that echo into the present.</p>
+        <p>We publish long-form articles, documentary features, and curated reading lists across every era of recorded history — from the earliest civilisations to the mid-twentieth century. Our editorial standard is simple: accuracy first, narrative always.</p>
+      </div>
+
+      <div class="about-section">
+        <h2 class="about-section-title">What We Cover</h2>
+        <div class="about-eras-grid">
+          <div class="about-era-card">
+            <span class="about-era-icon">⚱</span>
+            <div class="about-era-label">Ancient World</div>
+            <div class="about-era-desc">Egypt, Greece, Rome, Persia and the civilisations that built the foundations of the modern world.</div>
+          </div>
+          <div class="about-era-card">
+            <span class="about-era-icon">⚔</span>
+            <div class="about-era-label">Medieval</div>
+            <div class="about-era-desc">Crusades, plagues, cathedrals, and the slow forging of Europe from the ruins of Rome.</div>
+          </div>
+          <div class="about-era-card">
+            <span class="about-era-icon">⛵</span>
+            <div class="about-era-label">Early Modern</div>
+            <div class="about-era-desc">Renaissance, Reformation, exploration, and the age of absolute monarchs.</div>
+          </div>
+          <div class="about-era-card">
+            <span class="about-era-icon">🏭</span>
+            <div class="about-era-label">Modern Era</div>
+            <div class="about-era-desc">Industrialisation, nationalism, empire and the forces that shaped the nineteenth century.</div>
+          </div>
+          <div class="about-era-card">
+            <span class="about-era-icon">✈</span>
+            <div class="about-era-label">World Wars</div>
+            <div class="about-era-desc">The catastrophic conflicts of 1914–1945 that remade the political map of the entire world.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-section">
+        <h2 class="about-section-title">Our Writers</h2>
+        <div class="about-team">
+          <div class="about-author-card">
+            <div class="about-author-avatar">EC</div>
+            <div class="about-author-info">
+              <div class="about-author-name">Eleanor Cross</div>
+              <div class="about-author-role">Editor-in-Chief · Ancient & Medieval</div>
+              <div class="about-author-bio">Eleanor holds a doctorate in classical history from the University of Edinburgh. She has written on Roman military strategy, Byzantine court culture, and the archaeology of the Black Death. She joined Chronica at its founding in 2026.</div>
+            </div>
+          </div>
+          <div class="about-author-card">
+            <div class="about-author-avatar">MV</div>
+            <div class="about-author-info">
+              <div class="about-author-name">Marcus Vane</div>
+              <div class="about-author-role">Senior Editor · Early Modern & Military History</div>
+              <div class="about-author-bio">Marcus spent a decade as a researcher at the Imperial War Museum before turning to long-form history writing. His specialism is the military history of the early modern period, with a particular interest in the Thirty Years War and the campaigns of Marlborough.</div>
+            </div>
+          </div>
+          <div class="about-author-card">
+            <div class="about-author-avatar">SH</div>
+            <div class="about-author-info">
+              <div class="about-author-name">Sophie Hartley</div>
+              <div class="about-author-role">Contributing Editor · Modern Era & Social History</div>
+              <div class="about-author-bio">Sophie is a social historian whose work focuses on how ordinary people experienced the transformations of the nineteenth and twentieth centuries. Her writing has appeared in History Today, the TLS, and the Guardian's history section.</div>
+            </div>
+          </div>
+          <div class="about-author-card">
+            <div class="about-author-avatar">JR</div>
+            <div class="about-author-info">
+              <div class="about-author-name">James Rook</div>
+              <div class="about-author-role">Contributing Editor · World Wars</div>
+              <div class="about-author-bio">James is the author of three books on the First and Second World Wars, and has consulted on documentary productions for the BBC and Channel 4. He believes the wars of 1914–1945 remain the defining events of modernity and writes about them accordingly.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-section about-contact">
+        <h2 class="about-section-title">Get in Touch</h2>
+        <p>We welcome submissions, corrections, and letters from readers. If you have a story you think belongs in Chronica, we want to hear from you.</p>
+        <a href="mailto:editors@chronica.history" class="btn btn-gold" style="margin-top:1rem;display:inline-flex;">✉ Write to the Editors</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
