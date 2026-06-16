@@ -135,8 +135,8 @@
         <div class="image-upload-area" id="em-image-upload-area" onclick="document.getElementById('em-image-input').click()">
           <div class="image-upload-icon">📷</div>
           <div class="image-upload-text" id="em-image-upload-text">Click to upload a new cover image</div>
-          <div class="image-upload-hint">JPG or JPEG · Max 5MB</div>
-          <input type="file" id="em-image-input" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleEmImageUpload(this)">
+          <div class="image-upload-hint">JPG, JPEG or PNG · Max 5MB</div>
+          <input type="file" id="em-image-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display:none" onchange="handleEmImageUpload(this)">
         </div>
         <div id="em-image-preview-wrap" style="display:none;margin-top:0.5rem;position:relative;">
           <img id="em-image-preview" src="" alt="New cover preview" style="width:100%;max-height:160px;object-fit:cover;display:block;border:1px solid var(--rule);">
@@ -280,12 +280,12 @@
         <input type="text" id="content-subtitle" placeholder="A brief description for the front page…">
       </div>
       <div class="form-group">
-        <label>Cover Image <span style="font-weight:400;color:var(--ink-faint);">(JPG or JPEG)</span></label>
+        <label>Cover Image <span style="font-weight:400;color:var(--ink-faint);">(JPG, JPEG or PNG)</span></label>
         <div class="image-upload-area" id="image-upload-area" onclick="document.getElementById('content-image').click()">
           <div class="image-upload-icon">&#128247;</div>
           <div class="image-upload-text">Click to upload a cover image</div>
-          <div class="image-upload-hint">JPG or JPEG · Max 5MB</div>
-          <input type="file" id="content-image" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleImageUpload(this)">
+          <div class="image-upload-hint">JPG, JPEG or PNG · Max 5MB</div>
+          <input type="file" id="content-image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display:none" onchange="handleImageUpload(this)">
         </div>
         <div id="image-preview-wrap" style="display:none; margin-top:0.75rem; position:relative;">
           <img id="image-preview" src="" alt="Cover preview" style="width:100%;max-height:var(--default-card-image-height);object-fit:cover;display:block;border:1px solid var(--rule);">
