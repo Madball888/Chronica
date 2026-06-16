@@ -369,7 +369,16 @@ function playYTVideo(wrapperId, src) {
 }
 
 const STORE = 'chronica-v2';
-let state = JSON.parse(localStorage.getItem(STORE) || '{"contents":[],"members":[]}');
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORE) || '{"contents":[],"members":[]}');
+  } catch (error) {
+    console.warn('Resetting corrupted localStorage state for Chronica:', error);
+    localStorage.removeItem(STORE);
+    return { contents: [], members: [] };
+  }
+}
+let state = loadState();
 let previousView = 'front';
 let currentView = 'front';
 let currentArticleTitle = '';
