@@ -1369,7 +1369,7 @@ async function runAIGenerate() {
     // Step 1: Generate article
     setAIStatus('Claude is writing your article…', 20);
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1474,7 +1474,7 @@ async function aiExpandBody() {
   const existing = document.getElementById('content-body').value.trim();
   toast('✦ Claude is writing…');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1510,7 +1510,7 @@ document.addEventListener('keydown', function(e) {
 
 async function buildPollinationsUrl(title) {
   // Ask Claude for a vivid scene prompt
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2238,7 +2238,7 @@ Return ONLY valid JSON (no markdown, no backticks) with these exact fields:
   ]
 }`;
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2334,7 +2334,7 @@ async function renderThisDayWidget() {
 
   // Generate via API
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
