@@ -179,9 +179,14 @@ function serveStatic(req, res) {
     }
     const ext  = path.extname(filePath).toLowerCase();
     const mime = MIME[ext] || 'application/octet-stream';
+    // Don't cache code/markup so edits show up on refresh during development.
+    // Long-lived caching is reserved for binary assets (images, fonts).
+    const longCacheExts = ['.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff2'];
     res.writeHead(200, {
       'Content-Type':  mime,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
+      'Cache-Control': longCacheExts.includes(ext)
+        ? 'public, max-age=3600'
+        : 'no-cache',
     });
     res.end(data);
   });
