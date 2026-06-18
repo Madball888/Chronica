@@ -3,6 +3,55 @@
 const ADMIN_PASSWORD = 'chronica2024';
 let isAdmin = false;
 
+// ── Theme (Day / Night) ─────────────────────────────────────────────────────
+const THEME_STORE_KEY = 'chronica-theme'; // 'day' | 'night' | 'system'
+const THEME_BUTTON_LABEL = {
+  day: '☀ Day',
+  night: '☾ Night',
+  system: '☼ System'
+};
+
+function setThemeMode(mode) {
+  const root = document.documentElement;
+  if (!root) return;
+  if (mode === 'system') {
+    root.removeAttribute('data-theme');
+  } else {
+    root.setAttribute('data-theme', mode);
+  }
+
+  try {
+    localStorage.setItem(THEME_STORE_KEY, mode);
+  } catch {}
+
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = THEME_BUTTON_LABEL[mode] || 'Theme';
+}
+
+function initTheme() {
+  let mode = 'system';
+  try {
+    mode = localStorage.getItem(THEME_STORE_KEY) || 'system';
+  } catch {}
+
+  if (mode !== 'day' && mode !== 'night' && mode !== 'system') mode = 'system';
+  setThemeMode(mode);
+}
+
+function cycleThemeMode() {
+  let mode = 'system';
+  try {
+    mode = localStorage.getItem(THEME_STORE_KEY) || 'system';
+  } catch {}
+
+  const next = mode === 'system' ? 'day' : (mode === 'day' ? 'night' : 'system');
+  setThemeMode(next);
+}
+
+// Expose to inline onclick handlers
+window.cycleThemeMode = cycleThemeMode;
+
+
 function getFallbackImage(item, w = 1200, h = 800) {
   const parts = [];
   if (item.category) parts.push(item.category.split(/\s+/).slice(0,2).join(','));
@@ -98,32 +147,50 @@ function clearSearch() {
   applySearchFilter();
 }
 
+function getCardSearchText(card) {
+  const title = (card.querySelector('.headline')?.textContent || '').toLowerCase();
+  const deck = (card.querySelector('.deck')?.textContent || '').toLowerCase();
+  const tag = (card.querySelector('.tag')?.textContent || '').toLowerCase();
+  return { title, deck, tag };
+}
+
+function matchesCardSearch(card) {
+  if (!searchQuery) return true;
+  const { title, deck, tag } = getCardSearchText(card);
+  return title.includes(searchQuery) || deck.includes(searchQuery) || tag.includes(searchQuery);
+}
+
+function matchesCardCategory(card) {
+  if (activeCategory === 'all') return true;
+  const cat = card.dataset.category;
+  return !!cat && cat === activeCategory;
+}
+
 function applySearchFilter() {
   const hero = document.getElementById('hero-wrap');
   let totalVisible = 0;
 
-  document.querySelectorAll('.article-card, .video-card').forEach(card => {
-    const title = (card.querySelector('.headline')?.textContent || '').toLowerCase();
-    const deck = (card.querySelector('.deck')?.textContent || '').toLowerCase();
-    const tag = (card.querySelector('.tag')?.textContent || '').toLowerCase();
-    const matchesSearch = !searchQuery || title.includes(searchQuery) || deck.includes(searchQuery) || tag.includes(searchQuery);
-    const hiddenByFilter = card.style.display === 'none' && !card.dataset.searchHidden;
-    if (!searchQuery) {
-      if (card.dataset.searchHidden) { card.style.display = ''; delete card.dataset.searchHidden; }
-    } else {
-      if (!matchesSearch) {
-        card.dataset.searchHidden = '1';
+  // Re-compute visibility deterministically so search doesn't fight era/category filters.
+  document.querySelectorAll('.era-section').forEach(section => {
+    const eraId = section.dataset.era;
+    const eraVisible = activeEra === 'all' || activeEra === eraId;
+
+    // Latest section stays as-is.
+    if (section.classList.contains('latest-section')) return;
+
+    let any = false;
+
+    section.querySelectorAll('.article-card, .video-card').forEach(card => {
+      if (!eraVisible || !matchesCardCategory(card) || !matchesCardSearch(card)) {
         card.style.display = 'none';
       } else {
-        if (card.dataset.searchHidden) { delete card.dataset.searchHidden; card.style.display = ''; }
+        card.style.display = '';
+        any = true;
         totalVisible++;
       }
-    }
-  });
+    });
 
-  document.querySelectorAll('.era-section').forEach(section => {
-    const visible = [...section.querySelectorAll('.article-card, .video-card')].some(c => c.style.display !== 'none');
-    section.style.display = visible ? '' : 'none';
+    section.style.display = any ? '' : 'none';
   });
 
   if (hero) hero.style.display = searchQuery ? 'none' : '';
@@ -151,6 +218,7 @@ function applySearchFilter() {
   }
 }
 
+
 let _heroIndex = 0;
 let _heroItems = [];
 let _heroTimer = null;
@@ -174,11 +242,14 @@ function renderHero() {
 
   function slideHtml(item) {
     const isVideo = item.type === 'video';
-    const clickFn = item._sampleId ? `readSample('${item._id}')` : (item.isSample !== false ? `readSample('${item._id}')` : `readContent(${item.id})`);
     const imgUrl = item.image || getFallbackImage(item, 1200, 800);
+
+    const isSample = item._sampleId || item.isSample !== false;
+    const cardId = isSample ? ('sample-' + item._id) : String(item.id);
+
     return `
       <div class="hero-slide">
-        <div class="hero-card" onclick="${clickFn}">
+        <div class="hero-card" data-hero-id="${cardId}">
           <div class="hero-text">
             <div class="hero-kicker">${isVideo ? '▶ Video · ' : ''}${item.category || 'Feature'}</div>
             <div class="hero-headline">${h(item.title)}</div>
@@ -193,26 +264,55 @@ function renderHero() {
       </div>`;
   }
 
-  const dotsHtml = _heroItems.map((_, i) =>
-    `<button class="hero-dot${i === 0 ? ' active' : ''}" onclick="heroGoTo(${i})" aria-label="Slide ${i+1}"></button>`
-  ).join('');
-
   wrap.innerHTML = `
     <div class="hero-section-label"><span>Lead Stories</span></div>
     <div class="hero-slider" id="hero-slider">
-      <button class="hero-arrow hero-arrow-left" onclick="heroStep(-1)" aria-label="Previous">‹</button>
-      <button class="hero-arrow hero-arrow-right" onclick="heroStep(1)" aria-label="Next">›</button>
+      <button class="hero-arrow hero-arrow-left" aria-label="Previous" data-hero-step="-1">‹</button>
+      <button class="hero-arrow hero-arrow-right" aria-label="Next" data-hero-step="1">›</button>
       <div class="hero-slides" id="hero-slides">
         ${_heroItems.map(slideHtml).join('')}
       </div>
     </div>
     <div class="hero-timer-bar"><div class="hero-timer-fill" id="hero-timer-fill"></div></div>
-    <div class="hero-dots">${dotsHtml}</div>
+    <div class="hero-dots">${_heroItems.map((_, i) =>
+      `<button class="hero-dot${i === 0 ? ' active' : ''}" aria-label="Slide ${i+1}" data-hero-dot="${i}"></button>`
+    ).join('')}</div>
   `;
+
+  // Attach handlers (avoid fragile inline onclick strings)
+  const slideCards = wrap.querySelectorAll('.hero-card');
+  slideCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.heroId;
+      if (!id) return;
+      if (id.startsWith('sample-')) {
+        const sampleId = id.replace('sample-', '');
+        readSample(sampleId);
+      } else {
+        readContent(Number(id));
+      }
+    });
+  });
+
+  wrap.querySelectorAll('[data-hero-step]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = Number(btn.dataset.heroStep) || 0;
+      if (!dir) return;
+      heroStep(dir);
+    });
+  });
+
+  wrap.querySelectorAll('[data-hero-dot]').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const idx = Number(dot.dataset.heroDot) || 0;
+      heroGoTo(idx);
+    });
+  });
 
   _heroIndex = 0;
   startHeroTimer();
 }
+
 
 function heroGoTo(idx) {
   _heroIndex = (idx + _heroItems.length) % _heroItems.length;
@@ -451,6 +551,7 @@ let activeEra = 'all';
 let activeCategory = 'all';
 
 function init() {
+  initTheme();
   document.getElementById('masthead-date').textContent = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
     year: 'numeric',
@@ -804,25 +905,49 @@ function readContent(id) {
 
 function readSample(id) {
   try {
-    const item = getSample(id);
-    if (!item) {
+    const sample = getSample(id);
+    if (!sample) {
       toast('Article not found');
       return;
     }
-    currentArticleId = 'sample-' + id;
-    currentArticleTitle = item.title;
-    item.id = id;
-    incrementReadCount('sample-' + id);
-    _editingItem = item;
-    _editingIsSample = true;
-    _editingSampleId = id;
-    renderReader(item);
+
+    // Create a removable user-owned copy (so samples can be deleted like normal articles)
+    const newItem = {
+      ...sample,
+      id: Date.now(),
+      type: sample.type || 'article',
+      _sampleId: id,
+      isSample: true,
+    };
+
+    // If the sample already exists as a user copy, don't create duplicates.
+    // We consider a duplicate if a user item matches the same _sampleId and title.
+    const existingCopy = state.contents.find(c => c._sampleId === id && c.isSample === true && c.title === sample.title);
+    if (existingCopy) {
+      return readContent(existingCopy.id);
+    }
+
+    state.contents.unshift(newItem);
+    save();
+
+    currentArticleId = newItem.id;
+    currentArticleTitle = newItem.title;
+    incrementReadCount(newItem.id);
+    _editingItem = newItem;
+    _editingIsSample = false;
+    _editingSampleId = null;
+    renderReader(newItem);
     showView('reader');
+
+    // Keep hero/editor/editor flow consistent
+    renderFront();
+    renderHero();
   } catch (error) {
     console.error('Error reading sample:', error);
     toast('Error loading article');
   }
 }
+
 
 function renderReader(item) {
   try {
@@ -1365,17 +1490,15 @@ async function runAIGenerate() {
   const eraLabels = { ancient: 'Ancient World (before 500 AD)', medieval: 'Medieval (500–1500)', 'early-modern': 'Early Modern (1500–1800)', modern: 'Modern Era (1800–1914)', wwii: 'World Wars (1914–1945)' };
   const categoryMap = { ancient: 'Ancient World', medieval: 'Medieval History', 'early-modern': 'Early Modern', modern: 'Modern Era', wwii: 'World War II' };
 
-  try {
-    // Step 1: Generate article
-    setAIStatus('Claude is writing your article…', 20);
+  // Reset preview while streaming
+  document.getElementById('ai-gen-preview-title').textContent = '';
+  document.getElementById('ai-gen-preview-body').textContent = '';
 
-    const res = await fetch('/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: `Write a Chronica history magazine article about: "${topic}".
+  try {
+    // Step 1: Generate article (STREAMING)
+    setAIStatus('Claude is writing your article…', 10);
+
+    const prompt = `Write a Chronica history magazine article about: "${topic}".
 Era: ${eraLabels[era]}
 Style: ${styleGuide[style]}
 Length: ${wordRanges[length]} words.
@@ -1388,15 +1511,135 @@ Return ONLY valid JSON, no markdown fences:
   "subtitle": "one-sentence deck, max 18 words",
   "author": "Chronica Editorial",
   "body": "full article. Use blank lines between paragraphs. Start subheadings with ### on their own line."
-}` }]
+}`;
+
+    const res = await fetch('/v1/messages/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
-    const data = await res.json();
-    const raw = (data.content || []).map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    if (!res.ok || !res.body) {
+      throw new Error('Streaming request failed: ' + (res.status || 'unknown'));
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    // We'll accumulate the streamed text into a single buffer.
+    let buffer = '';
+
+    // Show preview container immediately (we update it progressively once JSON looks parseable)
+    document.getElementById('ai-gen-preview').style.display = 'block';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunkText = decoder.decode(value, { stream: true });
+
+      // Our server sends SSE formatted `data: <json>\n\n`.
+      // Parse line-by-line to extract payloads.
+      const lines = chunkText.split(/\r?\n/);
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr) continue;
+        let evt;
+        try { evt = JSON.parse(jsonStr); } catch { continue; }
+
+        // Forward only text deltas from anthropic objects.
+        if (evt && evt.type === 'anthropic') {
+          const p = evt.payload || {};
+
+          // Best-effort extraction for content deltas
+          const deltaText = p?.delta?.text;
+          if (typeof deltaText === 'string' && deltaText.length) {
+            buffer += deltaText;
+
+            // Update UI with current tail
+            const safeTail = buffer.length > 8000 ? buffer.slice(-8000) : buffer;
+            document.getElementById('ai-gen-preview-body').textContent = safeTail + '…';
+            setAIStatus('Claude is writing your article…', Math.min(80, 10 + Math.floor(buffer.length / 120)));
+          }
+        }
+      }
+    }
+
+    // Step 2: Parse JSON
+    const raw = buffer.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(raw);
 
+    // Step 3: Cover image
     setAIStatus('Building cover image…', 55);
+
+    let imgUrl = null;
+    if (genCover) {
+      try {
+        imgUrl = await buildPollinationsUrl(parsed.title);
+        const prevImg = document.getElementById('ai-gen-preview-img');
+        prevImg.src = imgUrl;
+        prevImg.dataset.aiUrl = imgUrl;
+      } catch(e) { console.warn('Cover gen failed:', e); }
+    }
+
+    setAIStatus('Preparing article…', 80);
+
+    document.getElementById('ai-gen-preview-title').textContent = parsed.title;
+    const bodyPreview = parsed.body.split('\n').slice(0, 4).join('\n');
+    document.getElementById('ai-gen-preview-body').textContent = bodyPreview + '…';
+
+    setAIStatus('Done!', 100);
+
+    if (doPublish) {
+      const rt = estimateReadTime(parsed.body);
+      const item = {
+        id: Date.now(),
+        type: 'article',
+        title: parsed.title,
+        subtitle: parsed.subtitle || '',
+        author: parsed.author || 'Chronica Editorial',
+        body: parsed.body,
+        era, category: categoryMap[era] || 'Modern Era',
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        readTimeLabel: rt.label, readTimeMinutes: rt.minutes, wordCount: rt.words,
+        autoGenerated: true,
+      };
+      if (imgUrl) item.image = imgUrl;
+      state.contents.unshift(item);
+      save(); renderFront(); renderHero();
+      toast(`✓ "${parsed.title}" published!`);
+      setTimeout(closeAIPanel, 1500);
+    } else {
+      // Load into editor form for review
+      closeAIPanel();
+      showView('admin');
+      pcTab('add', document.getElementById('pc-tab-add'));
+      document.getElementById('content-title').value = parsed.title;
+      document.getElementById('content-subtitle').value = parsed.subtitle || '';
+      document.getElementById('content-author').value = parsed.author || 'Chronica Editorial';
+      document.getElementById('content-body').value = parsed.body;
+      document.getElementById('content-era').value = era;
+      if (imgUrl) {
+        document.getElementById('image-preview').src = imgUrl;
+        document.getElementById('image-preview').dataset.aiUrl = imgUrl;
+        document.getElementById('image-preview-wrap').style.display = 'block';
+      }
+      toast('Article loaded in editor — review before publishing');
+    }
+
+  } catch(e) {
+    console.error('AI generate error:', e);
+    toast('Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '✦ Generate Article';
+    document.getElementById('ai-gen-status').style.display = 'none';
+  }
+}
+
 
     // Step 2: Generate cover image (parallel if possible)
     let imgUrl = null;

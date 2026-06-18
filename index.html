@@ -21,7 +21,6 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <!-- ── Login Modal ──────────────────────────────────────────── -->
 <div class="login-overlay" id="login-overlay" onclick="handleOverlayClick(event)">
   <div class="login-modal" role="dialog" aria-modal="true" aria-label="Editor Login">
@@ -49,6 +48,7 @@
       <button class="btn" onclick="showView('members')">⚜ Subscribe</button>
       <button class="btn btn-editor" onclick="openLogin()" id="editor-nav-btn">✎ Editor</button>
       <button class="btn btn-logout btn-sm" onclick="adminLogout()" id="logout-nav-btn" style="display:none">✕ Log Out</button>
+      <button class="btn" id="theme-toggle-btn" onclick="cycleThemeMode()" title="Toggle day / night mode">☾ Theme</button>
     </div>
   </div>
   <div class="masthead-frame">

@@ -23,6 +23,67 @@
   --default-card-image-height: 200px;
 }
 
+/* Night mode (respects system preference) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #efe6d7;
+    --ink-muted: #cbbda6;
+    --ink-faint: #a99a84;
+    --parchment: #1c1610;
+    --parchment-warm: #261d15;
+    --parchment-dark: #34261c;
+    --rule: #4b3b2a;
+    --rule-light: #5a4836;
+    --accent: #c03a3a;
+    --accent-light: #df4a4a;
+    --gold: #c8960f;
+    --gold-light: #e1b64a;
+    --stone: #12100d;
+    --midnight: #0b0706;
+    --white: #f7f1e2;
+  }
+}
+
+/* Manual theme override (Day/Night) */
+html[data-theme="day"] {
+  /* ensure we always get the light defaults even if system is dark */
+  --ink: #1a1610;
+  --ink-muted: #4a4540;
+  --ink-faint: #8a8278;
+  --parchment: #f5f0e8;
+  --parchment-warm: #ede6d6;
+  --parchment-dark: #d4c9b0;
+  --rule: #c0b49a;
+  --rule-light: #ddd4c0;
+  --accent: #8b1a1a;
+  --accent-light: #b52020;
+  --gold: #9a6f0f;
+  --gold-light: #c8960f;
+  --stone: #3d3428;
+  --midnight: #1a0f0a;
+  --white: #fffdf7;
+}
+
+html[data-theme="night"] {
+  --ink: #efe6d7;
+  --ink-muted: #cbbda6;
+  --ink-faint: #a99a84;
+  --parchment: #1c1610;
+  --parchment-warm: #261d15;
+  --parchment-dark: #34261c;
+  --rule: #4b3b2a;
+  --rule-light: #5a4836;
+  --accent: #c03a3a;
+  --accent-light: #df4a4a;
+  --gold: #c8960f;
+  --gold-light: #e1b64a;
+  --stone: #12100d;
+  --midnight: #0b0706;
+  --white: #f7f1e2;
+}
+
+
+
 body {
   font-family: var(--font-body);
   background: var(--parchment);
@@ -2147,7 +2208,10 @@ select { font-family: var(--font-ui); font-size: 13px; }
   gap: 3rem;
 }
 
-.about-section {}
+.about-section {
+  /* placeholder */
+}
+
 
 .about-section-title {
   font-family: var(--font-title);

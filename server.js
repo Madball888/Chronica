@@ -33,7 +33,7 @@ const MIME = {
   '.woff2':'font/woff2',
 };
 
-// ── Proxy a request to the Anthropic API ────────────────────────
+// ── Proxy a request to the Anthropic API (non-streaming) ───────
 function proxyAnthropic(req, res) {
   let body = '';
   req.on('data', chunk => body += chunk);
@@ -74,6 +74,94 @@ function proxyAnthropic(req, res) {
     proxyReq.end();
   });
 }
+
+// ── Proxy streaming response to the browser via SSE ─────────────
+function proxyAnthropicStream(req, res) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', () => {
+    if (!APIKEY) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set on server. See server.js for instructions.' }));
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+      return;
+    }
+
+    // Force streaming
+    parsed.stream = true;
+
+    const payload = JSON.stringify(parsed);
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    function sse(data) {
+      res.write('data: ' + JSON.stringify(data) + '\n\n');
+    }
+
+    // notify ready
+    sse({ type: 'status', text: 'connected' });
+
+    const options = {
+      hostname: 'api.anthropic.com',
+      path:     '/v1/messages',
+      method:   'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         APIKEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length':    Buffer.byteLength(payload),
+      },
+    };
+
+    const proxyReq = https.request(options, proxyRes => {
+      proxyRes.on('data', chunk => {
+        const text = chunk.toString('utf8');
+        // Anthropic streams as JSON lines. We forward each line as a 'delta'.
+        // If parsing fails, we still forward raw text as best-effort.
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+        for (const line of lines) {
+          try {
+            const obj = JSON.parse(line);
+            // Commonly: { type: 'content_block_delta', delta: { text: '...' } } or final message.
+            sse({ type: 'anthropic', payload: obj });
+          } catch {
+            sse({ type: 'raw', payload: line });
+          }
+        }
+      });
+
+      proxyRes.on('end', () => {
+        sse({ type: 'done' });
+        res.end();
+      });
+    });
+
+    proxyReq.on('error', err => {
+      console.error('Anthropic stream proxy error:', err.message);
+      try {
+        sse({ type: 'error', error: err.message });
+      } catch {}
+      res.end();
+    });
+
+    proxyReq.write(payload);
+    proxyReq.end();
+  });
+}
+
 
 // ── Serve static files ───────────────────────────────────────────
 function serveStatic(req, res) {
@@ -119,6 +207,11 @@ const server = http.createServer((req, res) => {
     proxyAnthropic(req, res);
     return;
   }
+  if (pathname === '/v1/messages/stream' && req.method === 'POST') {
+    proxyAnthropicStream(req, res);
+    return;
+  }
+
 
   // Serve static site files
   serveStatic(req, res);
