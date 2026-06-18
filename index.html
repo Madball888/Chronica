@@ -4,13 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chronica — History Magazine</title>
+
+<!-- SEO & Social -->
+<meta name="description" content="Chronica — A magazine of history and civilisation. Long-form articles, documentary features, and curated reading lists across every era of recorded history.">
+<meta name="theme-color" content="#1a0f0a">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Chronica — History Magazine">
+<meta property="og:description" content="History for the curious. Long-form articles across every era from Ancient World to the World Wars.">
+<meta property="og:image" content="https://image.pollinations.ai/prompt/ancient%20roman%20forum%20dramatic%20sunset%20cinematic?width=1200&height=630&nologo=true">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Fonts: optimized subset loading -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 
 <!-- ── Login Modal ──────────────────────────────────────────── -->
 <div class="login-overlay" id="login-overlay" onclick="handleOverlayClick(event)">
@@ -31,6 +41,7 @@
   </div>
 </div>
 
+<!-- ── Masthead ──────────────────────────────────────────────── -->
 <header class="masthead">
   <div class="masthead-banner">
     <div class="masthead-date" id="masthead-date"></div>
@@ -40,20 +51,17 @@
       <button class="btn btn-logout btn-sm" onclick="adminLogout()" id="logout-nav-btn" style="display:none">✕ Log Out</button>
     </div>
   </div>
-
   <div class="masthead-frame">
     <div class="corner corner-tl"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2 L2 20 L4 20 L4 4 L20 4 L20 2 Z" fill="#9a6f0f" opacity="0.8"/><path d="M2 2 L14 2 L14 4 L4 4 L4 14 L2 14 Z" fill="#c8960f" opacity="0.6"/><circle cx="2" cy="2" r="2" fill="#c8960f"/><path d="M8 8 L8 18 L10 18 L10 10 L18 10 L18 8 Z" fill="#9a6f0f" opacity="0.5"/><circle cx="22" cy="2" r="1.5" fill="#9a6f0f" opacity="0.5"/><circle cx="2" cy="22" r="1.5" fill="#9a6f0f" opacity="0.5"/></svg></div>
     <div class="corner corner-tr"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2 L2 20 L4 20 L4 4 L20 4 L20 2 Z" fill="#9a6f0f" opacity="0.8"/><path d="M2 2 L14 2 L14 4 L4 4 L4 14 L2 14 Z" fill="#c8960f" opacity="0.6"/><circle cx="2" cy="2" r="2" fill="#c8960f"/><path d="M8 8 L8 18 L10 18 L10 10 L18 10 L18 8 Z" fill="#9a6f0f" opacity="0.5"/></svg></div>
     <div class="corner corner-bl"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2 L2 20 L4 20 L4 4 L20 4 L20 2 Z" fill="#9a6f0f" opacity="0.8"/><path d="M2 2 L14 2 L14 4 L4 4 L4 14 L2 14 Z" fill="#c8960f" opacity="0.6"/><circle cx="2" cy="2" r="2" fill="#c8960f"/><path d="M8 8 L8 18 L10 18 L10 10 L18 10 L18 8 Z" fill="#9a6f0f" opacity="0.5"/></svg></div>
     <div class="corner corner-br"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2 L2 20 L4 20 L4 4 L20 4 L20 2 Z" fill="#9a6f0f" opacity="0.8"/><path d="M2 2 L14 2 L14 4 L4 4 L4 14 L2 14 Z" fill="#c8960f" opacity="0.6"/><circle cx="2" cy="2" r="2" fill="#c8960f"/><path d="M8 8 L8 18 L10 18 L10 10 L18 10 L18 8 Z" fill="#9a6f0f" opacity="0.5"/></svg></div>
-
     <div class="masthead-pretitle">Est. Anno Domini MMXXVI · Historia Magistra Vitae</div>
     <span class="masthead-emblem">&#x2767; ✦ &#x2767;</span>
     <div class="masthead-title"><span class="drop">C</span>HRONICA</div>
     <div class="masthead-subtitle">A Magazine of History &amp; Civilisation</div>
   </div>
-
-  <nav class="era-nav">
+  <nav class="era-nav" role="navigation" aria-label="Historical eras">
     <button class="era-tab active" onclick="filterEra('all', this)">All Eras</button>
     <button class="era-tab" onclick="filterEra('ancient', this)">Ancient World</button>
     <button class="era-tab" onclick="filterEra('medieval', this)">Medieval</button>
@@ -63,8 +71,7 @@
     <button class="era-tab" onclick="showView('members')">Members</button>
     <button class="era-tab" onclick="showView('about')">About</button>
   </nav>
-  
-  <nav class="category-nav" id="category-nav">
+  <nav class="category-nav" id="category-nav" aria-label="Article categories">
     <button class="category-tab active" onclick="filterCategory('all', this)">All Categories</button>
     <button class="category-tab" onclick="filterCategory('Ancient World', this)">Ancient World</button>
     <button class="category-tab" onclick="filterCategory('Medieval History', this)">Medieval History</button>
@@ -79,11 +86,12 @@
   </nav>
 </header>
 
+<!-- ── Admin Quick Strip ─────────────────────────────────────── -->
 <div class="admin-strip" id="admin-strip" style="display:none">
-  <button class="btn btn-ink btn-sm" onclick="showView('admin')">+ Publish New Article</button>
-  <button class="btn btn-ink btn-sm" onclick="showView('manage-tab')">Manage Content</button>
+  <button class="btn btn-ink btn-sm" onclick="showView('admin')">+ New Article</button>
+  <button class="btn btn-ink btn-sm" onclick="pcTab('published', document.getElementById('pc-tab-published')); showView('admin')">Manage Content</button>
+  <button class="btn btn-ink btn-sm ai-strip-btn" onclick="showAIGeneratePanel()">✦ AI Generate Article</button>
 </div>
-
 
 <!-- ── Reading Progress Bar ──────────────────────────────────── -->
 <div class="progress-bar-wrap" id="progress-bar-wrap">
@@ -93,73 +101,137 @@
 <!-- ── Search Bar ────────────────────────────────────────────── -->
 <div class="search-wrap" id="search-wrap">
   <div class="search-input-wrap">
-    <input class="search-input" id="search-input" type="text" placeholder="Search articles, eras, topics…"
-      oninput="onSearchInput(this.value)" onkeydown="if(event.key==='Escape')clearSearch()">
+    <input class="search-input" id="search-input" type="search" placeholder="Search articles, eras, topics…"
+      oninput="onSearchInput(this.value)" onkeydown="if(event.key==='Escape')clearSearch()"
+      autocomplete="off" spellcheck="false">
   </div>
-  <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
-  <span class="search-count" id="search-count"></span>
+  <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search" aria-label="Clear search">✕</button>
+  <span class="search-count" id="search-count" aria-live="polite"></span>
 </div>
 
+<!-- ── Front Page ────────────────────────────────────────────── -->
 <div class="view active" id="view-front">
   <div id="hero-wrap"></div>
   <div class="front-page" id="front-page-content"></div>
 </div>
 
-<!-- ── Inline Article Edit Modal ──────────────────────────────── -->
+<!-- ── AI Generate Panel ─────────────────────────────────────── -->
+<div class="ai-panel-overlay" id="ai-panel-overlay" onclick="if(event.target===this)closeAIPanel()">
+  <div class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-panel-title">✦ AI Article Generator</div>
+      <div class="ai-panel-sub">Claude writes a full article, generates a cover image, and publishes it instantly</div>
+      <button class="ai-panel-close" onclick="closeAIPanel()">✕</button>
+    </div>
+    <div class="ai-panel-body">
+      <div class="ai-panel-field">
+        <label class="ai-panel-label">Topic or Title</label>
+        <input type="text" id="ai-gen-topic" placeholder="e.g. The Fall of Constantinople, Why Rome Fell, Life in the Trenches…" onkeydown="if(event.key==='Enter')runAIGenerate()">
+      </div>
+      <div class="ai-panel-row">
+        <div class="ai-panel-field">
+          <label class="ai-panel-label">Era</label>
+          <select id="ai-gen-era">
+            <option value="ancient">Ancient World</option>
+            <option value="medieval">Medieval</option>
+            <option value="early-modern">Early Modern</option>
+            <option value="modern">Modern Era</option>
+            <option value="wwii">World Wars</option>
+          </select>
+        </div>
+        <div class="ai-panel-field">
+          <label class="ai-panel-label">Length</label>
+          <select id="ai-gen-length">
+            <option value="short">Short (400–600 words)</option>
+            <option value="medium" selected>Medium (700–900 words)</option>
+            <option value="long">Long (1000–1300 words)</option>
+          </select>
+        </div>
+        <div class="ai-panel-field">
+          <label class="ai-panel-label">Style</label>
+          <select id="ai-gen-style">
+            <option value="narrative">Narrative (storytelling)</option>
+            <option value="analytical">Analytical (argument-driven)</option>
+            <option value="biographical">Biographical (person-focused)</option>
+            <option value="military">Military (campaign focus)</option>
+          </select>
+        </div>
+      </div>
+      <div class="ai-gen-options">
+        <label class="ai-gen-checkbox"><input type="checkbox" id="ai-gen-cover" checked> Generate AI cover image</label>
+        <label class="ai-gen-checkbox"><input type="checkbox" id="ai-gen-publish" checked> Publish immediately</label>
+      </div>
+      <div class="ai-gen-status" id="ai-gen-status" style="display:none">
+        <div class="ai-gen-status-bar"><div class="ai-gen-status-fill" id="ai-gen-status-fill"></div></div>
+        <div class="ai-gen-status-text" id="ai-gen-status-text">Initialising…</div>
+      </div>
+      <div class="ai-gen-preview" id="ai-gen-preview" style="display:none">
+        <img id="ai-gen-preview-img" src="" alt="" style="width:100%;max-height:220px;object-fit:cover;display:block;margin-bottom:1rem;">
+        <div class="ai-gen-preview-title" id="ai-gen-preview-title"></div>
+        <div class="ai-gen-preview-body" id="ai-gen-preview-body"></div>
+      </div>
+    </div>
+    <div class="ai-panel-footer">
+      <button class="ai-panel-cancel" onclick="closeAIPanel()">Cancel</button>
+      <button class="ai-panel-run" id="ai-gen-btn" onclick="runAIGenerate()">✦ Generate Article</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Inline Edit Modal ──────────────────────────────────────── -->
 <div class="edit-modal-overlay" id="edit-modal-overlay" onclick="handleEditOverlayClick(event)">
   <div class="edit-modal">
     <div class="edit-modal-header">
-      <div class="edit-modal-title">✎ Edit Article</div>
-      <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+      <div class="edit-modal-title" id="edit-modal-title-text">✎ Edit Article</div>
+      <button class="edit-modal-close" onclick="closeEditModal()" aria-label="Close">✕</button>
     </div>
     <div class="edit-modal-body">
-      <div>
-        <label class="edit-field-label">Title</label>
-        <input type="text" id="em-title" placeholder="Article title…">
+      <div class="em-field-row">
+        <div>
+          <label class="edit-field-label">Title</label>
+          <input type="text" id="em-title" placeholder="Article title…">
+        </div>
+        <div>
+          <label class="edit-field-label">Author</label>
+          <input type="text" id="em-author" placeholder="Author name…">
+        </div>
       </div>
       <div>
         <label class="edit-field-label">Subtitle / Deck</label>
         <input type="text" id="em-subtitle" placeholder="Short descriptor…">
       </div>
-      <div>
-        <label class="edit-field-label">Author</label>
-        <input type="text" id="em-author" placeholder="Author name…">
-      </div>
-      <!-- Cover Image replacement -->
       <div id="em-image-section">
-        <label class="edit-field-label">Cover Image <span style="font-weight:400;letter-spacing:0">— upload to replace the current one</span></label>
+        <label class="edit-field-label">Cover Image</label>
         <div id="em-current-image-wrap" style="display:none;margin-bottom:0.6rem;position:relative;">
           <img id="em-current-image" src="" alt="Current cover" style="width:100%;max-height:160px;object-fit:cover;display:block;border:1px solid var(--rule);">
-          <div style="font-family:var(--font-ui);font-size:10px;color:var(--ink-faint);padding:4px 0;">Current image — upload below to replace it</div>
+          <div style="font-family:var(--font-ui);font-size:10px;color:var(--ink-faint);padding:4px 0;">Current image — upload or generate below to replace</div>
         </div>
         <div class="image-upload-area" id="em-image-upload-area" onclick="document.getElementById('em-image-input').click()">
           <div class="image-upload-icon">📷</div>
           <div class="image-upload-text" id="em-image-upload-text">Click to upload a new cover image</div>
-          <div class="image-upload-hint">JPG, JPEG or PNG · Max 5MB</div>
-          <input type="file" id="em-image-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display:none" onchange="handleEmImageUpload(this)">
+          <div class="image-upload-hint">JPG or JPEG · Max 5MB</div>
+          <input type="file" id="em-image-input" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleEmImageUpload(this)">
         </div>
+        <button class="em-ai-btn" id="em-ai-btn" onclick="generateEmAICover()" type="button">✦ Generate AI Cover from Title</button>
         <div id="em-image-preview-wrap" style="display:none;margin-top:0.5rem;position:relative;">
           <img id="em-image-preview" src="" alt="New cover preview" style="width:100%;max-height:160px;object-fit:cover;display:block;border:1px solid var(--rule);">
-          <button onclick="clearEmImage()" style="position:absolute;top:6px;right:6px;background:var(--ink);color:var(--white);border:none;padding:3px 8px;cursor:pointer;font-size:11px;">✕ Remove</button>
+          <button onclick="clearEmImage()" style="position:absolute;top:6px;right:6px;background:var(--ink);color:var(--white);border:none;padding:3px 8px;cursor:pointer;font-size:11px;font-family:var(--font-ui);">✕ Remove</button>
         </div>
       </div>
-
-      <!-- Video URL replacement (only shown for video type) -->
       <div id="em-video-section" style="display:none;">
         <label class="edit-field-label">Replace Video URL</label>
         <input type="url" id="em-video-url" placeholder="https://www.youtube.com/watch?v=…" oninput="previewEmVideo(this.value)">
         <div class="edit-hint">Paste a new YouTube or Vimeo URL to replace the current video.</div>
         <div id="em-video-preview-wrap" style="display:none;margin-top:0.6rem;">
-          <div style="position:relative;padding-bottom:56.25%;height:0;background:var(--stone);border-radius:2px;overflow:hidden;">
+          <div style="position:relative;padding-bottom:56.25%;height:0;background:var(--stone);overflow:hidden;">
             <iframe id="em-video-preview-frame" src="" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
           </div>
         </div>
       </div>
-
       <div id="em-body-section">
-        <label class="edit-field-label">Body <span style="font-weight:400;letter-spacing:0">(use ### for headings, blank line between paragraphs)</span></label>
+        <label class="edit-field-label">Body <span style="font-weight:400;letter-spacing:0">(### for headings · blank line between paragraphs)</span></label>
         <textarea id="em-body" placeholder="Article body…"></textarea>
-        <div class="edit-hint">Tip: Start a line with <code>### </code> to make it a section heading.</div>
+        <div class="edit-hint">Start a line with <code>### </code> to create a section heading.</div>
       </div>
     </div>
     <div class="edit-modal-footer">
@@ -169,16 +241,16 @@
   </div>
 </div>
 
+<!-- ── Reader View ────────────────────────────────────────────── -->
 <div class="view" id="view-reader">
-  <!-- Admin edit bar — only visible when isAdmin -->
   <div class="reader-edit-bar" id="reader-edit-bar">
     <span class="reader-edit-bar-label">✎ Editor Mode</span>
     <button class="btn btn-sm btn-gold" onclick="openInlineEditor()">✎ Edit This Article</button>
-    <button class="btn btn-sm btn-ink" style="color:var(--parchment);border-color:rgba(255,255,255,0.2)" onclick="goBack()">← Back without saving</button>
+    <button class="btn btn-sm btn-ink" style="color:var(--parchment);border-color:rgba(255,255,255,0.2)" onclick="goBack()">← Back</button>
   </div>
   <div class="reader">
     <div class="reader-nav">
-      <a onclick="goBack()">← Back</a>
+      <a onclick="goBack()" style="cursor:pointer">← Back</a>
       <div class="reader-share">
         <button class="btn btn-sm btn-ink" onclick="openShareModal()">↗ Share</button>
       </div>
@@ -187,6 +259,7 @@
   </div>
 </div>
 
+<!-- ── Members View ───────────────────────────────────────────── -->
 <div class="view" id="view-members">
   <div class="member-panel">
     <div class="panel-card">
@@ -206,145 +279,141 @@
         <label>Email Address</label>
         <input type="email" id="sub-email" placeholder="your@email.com">
       </div>
-      <div style="display: flex; gap: 10px; margin-top: 1rem;">
-        <button class="btn btn-gold" style="flex: 1; justify-content: center; padding: 12px;" onclick="subscribe()">⚜ Subscribe — It's Free</button>
+      <div style="display:flex;gap:10px;margin-top:1rem;">
+        <button class="btn btn-gold" style="flex:1;justify-content:center;padding:12px;" onclick="subscribe()">⚜ Subscribe — It's Free</button>
       </div>
     </div>
-
-    <div id="members-list-section" style="margin-top: 2rem; display: none;">
+    <div id="members-list-section" style="margin-top:2rem;display:none;">
       <div class="era-header"><span class="era-name">Fellow Members</span></div>
       <div class="content-list" id="members-list"></div>
     </div>
   </div>
 </div>
 
+<!-- ── Admin / Publish Content View ─────────────────────────── -->
 <div class="view" id="view-admin">
-  <div class="admin">
-    <div class="admin-header">
-      <div class="admin-title" id="admin-form-title">Publish Content</div>
-      <button class="btn btn-ink" onclick="goBack()">← Back</button>
+  <div class="pc-wrap">
+    <div class="pc-header">
+      <h1 class="pc-title">Publish Content</h1>
+      <button class="pc-back" onclick="goBack()">← Back</button>
     </div>
-    <div class="tabs">
-      <button class="tab active" id="tab-btn-add" onclick="switchTab('add', this)">Add New</button>
-      <button class="tab" id="tab-btn-manage" onclick="switchTab('manage', this)">Published</button>
-      <button class="tab" id="tab-btn-members-admin" onclick="switchTab('members-admin', this)">Members</button>
+    <hr class="pc-rule">
+    <div class="pc-tabs">
+      <button class="pc-tab active" id="pc-tab-add" onclick="pcTab('add',this)">ADD NEW</button>
+      <button class="pc-tab" id="pc-tab-published" onclick="pcTab('published',this)">PUBLISHED</button>
+      <button class="pc-tab" id="pc-tab-members" onclick="pcTab('members',this)">MEMBERS</button>
     </div>
 
-    <div class="tab-panel active" id="tab-add">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Content Type</label>
-          <select id="content-type" onchange="toggleContentType()">
-            <option value="article">📰 Article</option>
-            <option value="video">▶ Video</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Historical Era</label>
-          <select id="content-era">
-            <option value="ancient">Ancient World (before 500 AD)</option>
-            <option value="medieval">Medieval (500–1500)</option>
-            <option value="early-modern">Early Modern (1500–1800)</option>
-            <option value="modern">Modern Era (1800–1914)</option>
-            <option value="wwii">World Wars (1914–1945)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Category</label>
-          <select id="content-category">
-            <option>Ancient World</option>
-            <option>Medieval History</option>
-            <option>Renaissance</option>
-            <option>Early Modern</option>
-            <option>Military History</option>
-            <option>Social History</option>
-            <option>Political History</option>
-            <option>World War I</option>
-            <option>World War II</option>
-            <option>Modern Era</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Author</label>
-          <input type="text" id="content-author" placeholder="By…">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="content-title" placeholder="Enter a compelling headline…">
-      </div>
-      <div class="form-group">
-        <label>Subtitle / Summary</label>
-        <input type="text" id="content-subtitle" placeholder="A brief description for the front page…">
-      </div>
-      <div class="form-group">
-        <label>Cover Image <span style="font-weight:400;color:var(--ink-faint);">(JPG, JPEG or PNG)</span></label>
-        <div class="image-upload-area" id="image-upload-area" onclick="document.getElementById('content-image').click()">
-          <div class="image-upload-icon">&#128247;</div>
-          <div class="image-upload-text">Click to upload a cover image</div>
-          <div class="image-upload-hint">JPG, JPEG or PNG · Max 5MB</div>
-          <input type="file" id="content-image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display:none" onchange="handleImageUpload(this)">
-        </div>
-        <div id="image-preview-wrap" style="display:none; margin-top:0.75rem; position:relative;">
-          <img id="image-preview" src="" alt="Cover preview" style="width:100%;max-height:var(--default-card-image-height);object-fit:cover;display:block;border:1px solid var(--rule);">
-          <button onclick="clearImage()" style="position:absolute;top:6px;right:6px;background:var(--ink);color:var(--white);border:none;padding:3px 8px;cursor:pointer;font-size:11px;">✕ Remove</button>
-        </div>
-      </div>
-      <div id="article-fields">
-        <div class="form-group">
-          <label>Article Body</label>
-          <textarea id="content-body" placeholder="Write your article here.&#10;&#10;Use blank lines between paragraphs.&#10;Use ### at the start of a line for subheadings."></textarea>
-          <div class="form-hint">Blank lines = new paragraph · ### Heading = subheading</div>
-        </div>
-      </div>
-      <div id="video-fields" style="display: none;">
-        <div class="form-group">
-          <label>YouTube or Vimeo URL</label>
-          <input type="url" id="content-video-url" placeholder="https://www.youtube.com/watch?v=…" oninput="previewVideo(this.value)">
-          <div class="form-hint">Paste a YouTube or Vimeo link — a preview will appear below</div>
-        </div>
-        <div id="video-preview-wrap" style="display:none; margin-bottom: 1.2rem;">
-          <label>Preview</label>
-          <div style="position:relative; padding-bottom:56.25%; height:0; background:var(--stone); border-radius:2px; overflow:hidden; margin-top:6px;">
-            <iframe id="video-preview-frame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+    <div class="pc-panel active" id="pc-panel-add">
+      <div class="pc-form">
+        <div class="pc-form-row">
+          <div class="pc-field">
+            <label class="pc-label">Content Type</label>
+            <select id="content-type" onchange="toggleContentType()">
+              <option value="article">Article</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+          <div class="pc-field">
+            <label class="pc-label">Historical Era</label>
+            <select id="content-era">
+              <option value="ancient">Ancient World</option>
+              <option value="medieval">Medieval</option>
+              <option value="early-modern">Early Modern</option>
+              <option value="modern">Modern Era</option>
+              <option value="wwii">World Wars</option>
+            </select>
+          </div>
+          <div class="pc-field">
+            <label class="pc-label">Category</label>
+            <select id="content-category">
+              <option>Ancient World</option>
+              <option>Medieval History</option>
+              <option>Renaissance</option>
+              <option>Early Modern</option>
+              <option>Military History</option>
+              <option>Social History</option>
+              <option>Political History</option>
+              <option>World War I</option>
+              <option>World War II</option>
+              <option>Modern Era</option>
+            </select>
+          </div>
+          <div class="pc-field">
+            <label class="pc-label">Author</label>
+            <input type="text" id="content-author" placeholder="By…">
           </div>
         </div>
-        <div class="form-group">
-          <label>Video Description</label>
-          <textarea id="content-video-desc" placeholder="Brief description of what viewers will watch…" style="min-height: 120px;"></textarea>
+        <div class="pc-field">
+          <label class="pc-label">Title</label>
+          <input type="text" id="content-title" placeholder="Enter a compelling headline…">
+        </div>
+        <div class="pc-field">
+          <label class="pc-label">Subtitle / Summary</label>
+          <input type="text" id="content-subtitle" placeholder="A brief description for the front page…">
+        </div>
+        <div class="pc-field">
+          <label class="pc-label">Cover Image <span class="pc-label-note">Upload your own or generate with AI</span></label>
+          <div class="pc-upload-area" id="image-upload-area" onclick="document.getElementById('content-image').click()">
+            <span class="pc-upload-icon">📷</span>
+            <span class="image-upload-text">Click to upload a cover image</span>
+            <input type="file" id="content-image" accept=".jpg,.jpeg,image/jpeg" style="display:none" onchange="handleImageUpload(this)">
+          </div>
+          <button class="pc-ai-img-btn" id="ai-cover-btn" onclick="generateAICover()" type="button">✦ Generate AI Cover from Title</button>
+          <div id="image-preview-wrap" style="display:none;margin-top:0.75rem;position:relative;">
+            <img id="image-preview" src="" alt="Cover preview" style="width:100%;max-height:200px;object-fit:cover;display:block;border:1px solid var(--rule);">
+            <button onclick="clearImage()" class="pc-img-remove">✕ Remove</button>
+          </div>
+        </div>
+        <div id="article-fields">
+          <div class="pc-field">
+            <label class="pc-label">Article Body <span class="pc-label-note">or <button class="pc-inline-ai-btn" onclick="aiExpandBody()" type="button">✦ write with AI from title</button></span></label>
+            <textarea id="content-body" class="pc-body-textarea" placeholder="Write your article here.&#10;&#10;Use blank lines between paragraphs.&#10;Use ### at the start of a line for subheadings."></textarea>
+            <div class="pc-hint">Blank lines = new paragraph · ### Heading = subheading</div>
+          </div>
+        </div>
+        <div id="video-fields" style="display:none;">
+          <div class="pc-field">
+            <label class="pc-label">YouTube or Vimeo URL</label>
+            <input type="url" id="content-video-url" placeholder="https://www.youtube.com/watch?v=…" oninput="previewVideo(this.value)">
+            <div class="pc-hint">Paste a YouTube or Vimeo link — a preview will appear below</div>
+          </div>
+          <div id="video-preview-wrap" style="display:none;margin-bottom:1.2rem;">
+            <div style="position:relative;padding-bottom:56.25%;height:0;background:var(--parchment);overflow:hidden;margin-top:6px;">
+              <iframe id="video-preview-frame" src="" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+            </div>
+          </div>
+          <div class="pc-field">
+            <label class="pc-label">Video Description</label>
+            <textarea id="content-video-desc" style="min-height:120px;" placeholder="Brief description…"></textarea>
+          </div>
+        </div>
+        <input type="hidden" id="edit-id" value="">
+        <div class="pc-form-actions">
+          <button class="pc-publish-btn" id="publish-btn" onclick="publishContent()">Publish</button>
+          <button class="pc-cancel-btn" id="cancel-edit-btn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+          <button class="pc-clear-btn" onclick="clearForm()">Clear</button>
         </div>
       </div>
-      <input type="hidden" id="edit-id" value="">
-      <div class="form-actions">
-        <button class="btn btn-primary" id="publish-btn" onclick="publishContent()">Publish</button>
-        <button class="btn btn-ink" id="cancel-edit-btn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
-        <button class="btn btn-ink" onclick="clearForm()">Clear</button>
-      </div>
     </div>
 
-    <div class="tab-panel" id="tab-manage">
-      <div class="content-list" id="manage-content-list">
-        <div class="empty-state">No content yet.</div>
-      </div>
+    <div class="pc-panel" id="pc-panel-published">
+      <div class="pc-list" id="pc-list-published"></div>
     </div>
-
-    <div class="tab-panel" id="tab-members-admin">
-      <div class="content-list" id="admin-members-list">
-        <div class="empty-state">No subscribers yet.</div>
-      </div>
+    <div class="pc-panel" id="pc-panel-members">
+      <div class="pc-list" id="pc-list-members"></div>
     </div>
   </div>
 </div>
 
+<!-- ── Share Modal ────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="share-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('share-modal')">✕</button>
     <div class="modal-title">Share This Article</div>
     <div class="modal-body" id="share-modal-title">Share with your fellow history enthusiasts.</div>
     <div class="share-links">
-      <a class="share-link-btn" href="#" onclick="shareTwitter(); return false;">🐦 Twitter / X</a>
+      <a class="share-link-btn" href="#" onclick="shareTwitter(); return false;">𝕏 Twitter / X</a>
       <a class="share-link-btn" href="#" onclick="shareFacebook(); return false;">📘 Facebook</a>
       <a class="share-link-btn" href="#" onclick="shareWhatsapp(); return false;">💬 WhatsApp</a>
       <a class="share-link-btn" href="#" onclick="shareEmail(); return false;">✉ Email</a>
@@ -357,16 +426,18 @@
   </div>
 </div>
 
+<!-- ── Subscribe Modal ───────────────────────────────────────── -->
 <div class="modal-backdrop" id="sub-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('sub-modal')">✕</button>
     <div class="modal-title">⚜ Welcome to the Chronica</div>
     <div class="modal-body" id="sub-modal-body">You are now a member of our fellowship.</div>
-    <button class="btn btn-gold" style="width: 100%; justify-content: center; padding: 12px;" onclick="closeModal('sub-modal'); showView('front')">Continue Reading</button>
+    <button class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;" onclick="closeModal('sub-modal'); showView('front')">Continue Reading</button>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- ── Toast ─────────────────────────────────────────────────── -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ── About View ─────────────────────────────────────────────── -->
 <div class="view" id="view-about">
@@ -378,50 +449,30 @@
         <p class="about-lead">A magazine dedicated to the stories, turning points, and forgotten corners of human history — written for the curious, not the credentialed.</p>
       </div>
     </div>
-
     <div class="about-body">
       <div class="about-section">
         <h2 class="about-section-title">Our Mission</h2>
         <p>Chronica exists because history is the greatest story ever told — and most of it goes untold. We believe that understanding the past is not an academic exercise but a human necessity. Every war, every empire, every plague, every revolution contains lessons that echo into the present.</p>
         <p>We publish long-form articles, documentary features, and curated reading lists across every era of recorded history — from the earliest civilisations to the mid-twentieth century. Our editorial standard is simple: accuracy first, narrative always.</p>
       </div>
-
       <div class="about-section">
         <h2 class="about-section-title">What We Cover</h2>
         <div class="about-eras-grid">
-          <div class="about-era-card">
-            <span class="about-era-icon">⚱</span>
-            <div class="about-era-label">Ancient World</div>
-            <div class="about-era-desc">Egypt, Greece, Rome, Persia and the civilisations that built the foundations of the modern world.</div>
-          </div>
-          <div class="about-era-card">
-            <span class="about-era-icon">⚔</span>
-            <div class="about-era-label">Medieval</div>
-            <div class="about-era-desc">Crusades, plagues, cathedrals, and the slow forging of Europe from the ruins of Rome.</div>
-          </div>
-          <div class="about-era-card">
-            <span class="about-era-icon">⛵</span>
-            <div class="about-era-label">Early Modern</div>
-            <div class="about-era-desc">Renaissance, Reformation, exploration, and the age of absolute monarchs.</div>
-          </div>
-          <div class="about-era-card">
-            <span class="about-era-icon">🏭</span>
-            <div class="about-era-label">Modern Era</div>
-            <div class="about-era-desc">Industrialisation, nationalism, empire and the forces that shaped the nineteenth century.</div>
-          </div>
-          <div class="about-era-card">
-            <span class="about-era-icon">✈</span>
-            <div class="about-era-label">World Wars</div>
-            <div class="about-era-desc">The catastrophic conflicts of 1914–1945 that remade the political map of the entire world.</div>
-          </div>
+          <div class="about-era-card"><span class="about-era-icon">⚱</span><div class="about-era-label">Ancient World</div><div class="about-era-desc">Egypt, Greece, Rome, Persia and the civilisations that built the foundations of the modern world.</div></div>
+          <div class="about-era-card"><span class="about-era-icon">⚔</span><div class="about-era-label">Medieval</div><div class="about-era-desc">Crusades, plagues, cathedrals, and the slow forging of Europe from the ruins of Rome.</div></div>
+          <div class="about-era-card"><span class="about-era-icon">⛵</span><div class="about-era-label">Early Modern</div><div class="about-era-desc">Renaissance, Reformation, exploration, and the age of absolute monarchs.</div></div>
+          <div class="about-era-card"><span class="about-era-icon">🏭</span><div class="about-era-label">Modern Era</div><div class="about-era-desc">Industrialisation, nationalism, empire and the forces that shaped the nineteenth century.</div></div>
+          <div class="about-era-card"><span class="about-era-icon">✈</span><div class="about-era-label">World Wars</div><div class="about-era-desc">The catastrophic conflicts of 1914–1945 that remade the political map of the entire world.</div></div>
         </div>
       </div>
-
       <div class="about-section">
         <h2 class="about-section-title">Our Team</h2>
-        <p>Chronica is produced by a small team of historians, researchers and writers with a vast amount of expertise across many periods and regions. Our collective experience covers archaeology, military history, social and political history, and scholarly research — together we aim to present accurate, engaging narratives for curious readers.</p>
+        <div class="about-team-statement">
+          <p>Chronica is written and edited by a dedicated team of history enthusiasts, researchers, and writers who collectively bring vast expertise across every period of recorded history — from the ancient civilisations of the Mediterranean to the global conflicts of the twentieth century.</p>
+          <p>Our contributors hold deep knowledge across military history, social history, archaeology, political history, and the history of ideas. What unites them is a shared belief that the past deserves to be told with rigour, clarity, and genuine passion.</p>
+          <p>We do not write for academics. We write for anyone who has ever wondered why things are the way they are — and wanted to follow that thread all the way back.</p>
+        </div>
       </div>
-
       <div class="about-section about-contact">
         <h2 class="about-section-title">Get in Touch</h2>
         <p>We welcome submissions, corrections, and letters from readers. If you have a story you think belongs in Chronica, we want to hear from you.</p>

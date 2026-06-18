@@ -159,32 +159,35 @@ const HERO_INTERVAL = 5000;
 
 function renderHero() {
   const heroIds = ['fall-of-rome', 'mongol-empire', 'plague', 'napoleon', 'd-day-landings', 'renaissance'];
-  _heroItems = heroIds
-    .map(id => { const s = getSample(id); return s ? { ...s, _id: id } : null; })
-    .filter(Boolean)
-    .slice(0, 3);
+
+  // For each hero ID, check if user has edited it (stored in state.contents with _sampleId), else use sample
+  _heroItems = heroIds.map(id => {
+    const edited = state.contents.find(c => c._sampleId === id);
+    if (edited) return { ...edited, _id: id };
+    const s = getSample(id);
+    return s ? { ...s, _id: id } : null;
+  }).filter(Boolean).slice(0, 3);
 
   if (!_heroItems.length) return;
   const wrap = document.getElementById('hero-wrap');
   if (!wrap) return;
 
-    function slideHtml(item) {
+  function slideHtml(item) {
     const isVideo = item.type === 'video';
-    const clickFn = `readSample('${item._id}')`;
-      const imgUrl = item.image || getFallbackImage(item, 1200, 800);
+    const clickFn = item._sampleId ? `readSample('${item._id}')` : (item.isSample !== false ? `readSample('${item._id}')` : `readContent(${item.id})`);
+    const imgUrl = item.image || getFallbackImage(item, 1200, 800);
     return `
       <div class="hero-slide">
         <div class="hero-card" onclick="${clickFn}">
           <div class="hero-text">
             <div class="hero-kicker">${isVideo ? '▶ Video · ' : ''}${item.category || 'Feature'}</div>
-            <div class="hero-headline">${item.title}</div>
-            ${item.subtitle ? `<div class="hero-deck">${item.subtitle}</div>` : ''}
-            <div class="hero-meta">${item.author || 'Chronica Editorial'} &nbsp;·&nbsp; ${item.date || 'Archive'}</div>
+            <div class="hero-headline">${h(item.title)}</div>
+            ${item.subtitle ? `<div class="hero-deck">${h(item.subtitle)}</div>` : ''}
+            <div class="hero-meta">${h(item.author || 'Chronica Editorial')} &nbsp;·&nbsp; ${h(item.date || 'Archive')}</div>
           </div>
           <div class="hero-image-wrap">
-            <img class="hero-image" src="${imgUrl}" alt="${item.title}"
+            <img class="hero-image" src="${imgUrl}" alt="${h(item.title)}"
               onerror="this.closest('.hero-image-wrap').style.background='var(--stone)';this.style.display='none'" loading="eager">
-            ${item.imageCaption ? `<div class="hero-image-label">${item.imageCaption}</div>` : ''}
           </div>
         </div>
       </div>`;
@@ -331,9 +334,11 @@ function saveInlineEdit() {
   const isVideo  = _editingItem.type === 'video';
   if (!title) { toast('Title cannot be empty.'); return; }
 
-  // Get new image if uploaded
+  // Get new image if uploaded or AI-generated
   const newImagePreview = document.getElementById('em-image-preview');
-  const newImage = (newImagePreview && newImagePreview.src && newImagePreview.src.startsWith('data:')) ? newImagePreview.src : null;
+  const newImage = newImagePreview && newImagePreview.src && (newImagePreview.src.startsWith('data:') || newImagePreview.dataset.aiUrl || newImagePreview.src.includes('pollinations.ai'))
+    ? (newImagePreview.dataset.aiUrl || newImagePreview.src)
+    : null;
 
   // Get new video URL if changed
   const newVideoUrl = isVideo ? document.getElementById('em-video-url').value.trim() : null;
@@ -380,6 +385,7 @@ function saveInlineEdit() {
 
   closeEditModal();
   renderReader(_editingItem);
+  renderHero();
   toast('Article saved!');
 }
 
@@ -398,11 +404,15 @@ function handleEmImageUpload(input) {
 }
 
 function clearEmImage() {
-  document.getElementById('em-image-input').value = '';
-  document.getElementById('em-image-preview').src = '';
+  const inp = document.getElementById('em-image-input');
+  if (inp) inp.value = '';
+  const prev = document.getElementById('em-image-preview');
+  if (prev) { prev.src = ''; delete prev.dataset.aiUrl; }
   document.getElementById('em-image-preview-wrap').style.display = 'none';
   document.getElementById('em-image-upload-area').style.borderColor = '';
   document.getElementById('em-image-upload-text').textContent = 'Click to upload a new cover image';
+  const btn = document.getElementById('em-ai-btn');
+  if (btn) btn.textContent = '✦ Generate AI Cover from Title';
 }
 
 function previewEmVideo(url) {
@@ -466,6 +476,8 @@ function activateView(name) {
   window.scrollTo(0, 0);
   const sw = document.getElementById('search-wrap');
   if (sw) sw.style.display = (name === 'front') ? '' : 'none';
+  const tdih = document.getElementById('tdih-widget');
+  if (tdih) tdih.style.display = (name === 'front') ? '' : 'none';
   if (name !== 'reader') {
     const pb = document.getElementById('progress-bar-wrap');
     const pf = document.getElementById('progress-bar-fill');
@@ -537,6 +549,7 @@ function showView(name) {
       applyFilters();
     }
   }
+  if (name === 'admin') { renderPublished(); }
   if (name === 'members') renderMembersPage();
   if (name === 'about') { /* static, nothing to render */ }
 }
@@ -896,9 +909,7 @@ function renderReader(item) {
       html += `</div></div>`;
     }
 
-    // Series trail removed per request
-    const seriesHtml = '';
-
+    // Read count display
     const totalReads = getReadCount(_editingIsSample ? ('sample-' + (item.id || _editingSampleId)) : item.id);
     const readsDisplay = totalReads > 0 ? `<span class="reader-read-count">👁 ${formatReadCount(totalReads)}</span>` : '';
 
@@ -1098,17 +1109,60 @@ function renderMembersPage() {
   }
 }
 
-function switchTab(name, btn) {
-  try {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    if (btn) btn.classList.add('active');
-    if (name === 'manage') renderManage();
-    if (name === 'members-admin') renderAdminMembers();
-  } catch (error) {
-    console.error('Error switching tabs:', error);
+// ── Publish Content Dashboard ────────────────────────────────────
+
+function pcTab(name, btn) {
+  document.querySelectorAll('.pc-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.pc-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pc-panel-' + name).classList.add('active');
+  if (name === 'published') renderPublished();
+  if (name === 'members')   renderPcMembers();
+}
+
+function renderPublished() {
+  const el = document.getElementById('pc-list-published');
+  if (!state.contents.length) {
+    el.innerHTML = '<div class="pc-empty">No content yet. Use Add New to publish your first article.</div>';
+    return;
   }
+  el.innerHTML = `<div class="pc-table">` + state.contents.map(item => `
+    <div class="pc-row">
+      <span class="pc-badge pc-badge-${item.type}">${item.type.toUpperCase()}</span>
+      <div class="pc-row-title">${h(item.title)}</div>
+      <div class="pc-row-meta">${h(item.era || '')} · ${h(item.date || '')}</div>
+      <div class="pc-row-btns">
+        <button class="pc-btn" onclick="readContent(${item.id})">Read</button>
+        <button class="pc-btn" onclick="editContent(${item.id})">Edit</button>
+        <button class="pc-btn pc-btn-delete" onclick="deleteContent(${item.id})">Delete</button>
+      </div>
+    </div>
+  `).join('') + `</div>`;
+}
+
+function renderPcMembers() {
+  const el = document.getElementById('pc-list-members');
+  if (!state.members.length) {
+    el.innerHTML = '<div class="pc-empty">No subscribers yet.</div>';
+    return;
+  }
+  el.innerHTML = `<div class="pc-table">` + state.members.map((m, i) => `
+    <div class="pc-row">
+      <div class="pc-row-title">${h(m.name)}</div>
+      <div class="pc-row-meta">${h(m.email)} · ${h(m.date || '')}</div>
+      <div class="pc-row-btns">
+        <button class="pc-btn pc-btn-delete" onclick="deleteMember('${m.email}')">Remove</button>
+      </div>
+    </div>
+  `).join('') + `</div>`;
+}
+
+// ── Tab / form helpers ───────────────────────────────────────────
+
+function switchTab(name) {
+  if (name === 'manage') pcTab('published', document.getElementById('pc-tab-published'));
+  if (name === 'members-admin') pcTab('members', document.getElementById('pc-tab-members'));
+  if (name === 'add') pcTab('add', document.getElementById('pc-tab-add'));
 }
 
 function toggleContentType() {
@@ -1123,19 +1177,16 @@ function toggleContentType() {
 
 function clearForm() {
   try {
-    ['content-title', 'content-subtitle', 'content-author', 'content-body', 'content-video-url', 'content-video-desc'].forEach(id => {
-      const el = document.getElementById(id); 
+    ['content-title','content-subtitle','content-author','content-body','content-video-url','content-video-desc'].forEach(id => {
+      const el = document.getElementById(id);
       if (el) el.value = '';
     });
     document.getElementById('content-type').value = 'article';
     document.getElementById('edit-id').value = '';
-    document.getElementById('admin-form-title').textContent = 'Publish Content';
     document.getElementById('publish-btn').textContent = 'Publish';
     document.getElementById('cancel-edit-btn').style.display = 'none';
     const uploadText = document.querySelector('.image-upload-text');
     if (uploadText) uploadText.textContent = 'Click to upload a cover image';
-    const videoHint = document.querySelector('#video-fields .form-hint');
-    if (videoHint) videoHint.textContent = 'Paste a YouTube or Vimeo link — a preview will appear below';
     clearImage();
     toggleContentType();
   } catch (error) {
@@ -1145,102 +1196,403 @@ function clearForm() {
 
 function publishContent() {
   try {
-    const type = document.getElementById('content-type').value;
-    const title = document.getElementById('content-title').value.trim();
+    const type     = document.getElementById('content-type').value;
+    const title    = document.getElementById('content-title').value.trim();
     const subtitle = document.getElementById('content-subtitle').value.trim();
-    const author = document.getElementById('content-author').value.trim();
+    const author   = document.getElementById('content-author').value.trim();
     const category = document.getElementById('content-category').value;
-    const era = document.getElementById('content-era').value;
-    
-    const editId = document.getElementById('edit-id').value;
+    const era      = document.getElementById('content-era').value;
+    const editId   = document.getElementById('edit-id').value;
     const uploadedImage = getUploadedImage();
 
+    if (!title) { toast('Please enter a title.'); return; }
+
     if (editId) {
-      // Editing existing item
       const existing = state.contents.find(c => c.id == editId);
       if (!existing) { toast('Article not found.'); return; }
-      existing.type = type;
-      existing.title = title;
-      existing.subtitle = subtitle;
-      existing.author = author;
-      existing.category = category;
-      existing.era = era;
-      // Replace image only if a new one was uploaded
+      existing.type = type; existing.title = title; existing.subtitle = subtitle;
+      existing.author = author; existing.category = category; existing.era = era;
       if (uploadedImage) existing.image = uploadedImage;
       if (type === 'article') {
         existing.body = document.getElementById('content-body').value.trim();
-        const readTime = estimateReadTime(existing.body);
-        existing.readTimeLabel = readTime.label;
-        existing.readTimeMinutes = readTime.minutes;
-        existing.wordCount = readTime.words;
+        const rt = estimateReadTime(existing.body);
+        existing.readTimeLabel = rt.label; existing.readTimeMinutes = rt.minutes; existing.wordCount = rt.words;
       } else {
         const url = document.getElementById('content-video-url').value.trim();
         if (!url) { toast('Please enter a video URL.'); return; }
-        // Replace video — old embedUrl is overwritten
-        existing.videoUrl = url;
-        existing.embedUrl = getEmbedUrl(url);
+        existing.videoUrl = url; existing.embedUrl = getEmbedUrl(url);
         existing.videoDesc = document.getElementById('content-video-desc').value.trim();
       }
-      save();
-      clearForm();
-      document.getElementById('edit-id').value = '';
-      document.getElementById('admin-form-title').textContent = 'Publish Content';
-      document.getElementById('publish-btn').textContent = 'Publish';
-      document.getElementById('cancel-edit-btn').style.display = 'none';
+      save(); clearForm(); renderFront(); renderHero();
       toast('✓ Changes saved!');
-      setTimeout(() => showView('front'), 800);
-      return;
-    }
-
-    if (!title) {
-      toast('Please enter a title.');
+      pcTab('published', document.getElementById('pc-tab-published'));
       return;
     }
 
     const item = {
-      id: Date.now(),
-      type,
-      title,
-      subtitle,
-      author,
-      category,
-      era,
+      id: Date.now(), type, title, subtitle, author, category, era,
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
     };
-
     if (uploadedImage) item.image = uploadedImage;
 
     if (type === 'article') {
       const body = document.getElementById('content-body').value.trim();
-      if (!body) {
-        toast('Please enter article body text.');
-        return;
-      }
+      if (!body) { toast('Please enter article body text.'); return; }
       item.body = body;
-      const readTime = estimateReadTime(body);
-      item.readTimeLabel = readTime.label;
-      item.readTimeMinutes = readTime.minutes;
-      item.wordCount = readTime.words;
+      const rt = estimateReadTime(body);
+      item.readTimeLabel = rt.label; item.readTimeMinutes = rt.minutes; item.wordCount = rt.words;
     } else {
       const url = document.getElementById('content-video-url').value.trim();
-      if (!url) {
-        toast('Please enter a video URL.');
-        return;
-      }
-      item.videoUrl = url;
-      item.videoDesc = document.getElementById('content-video-desc').value.trim();
+      if (!url) { toast('Please enter a video URL.'); return; }
+      item.videoUrl = url; item.videoDesc = document.getElementById('content-video-desc').value.trim();
       item.embedUrl = getEmbedUrl(url);
     }
 
     state.contents.unshift(item);
-    save();
-    clearForm();
+    save(); clearForm(); renderFront(); renderHero();
     toast('✓ Published!');
-    setTimeout(() => showView('front'), 1000);
+    pcTab('published', document.getElementById('pc-tab-published'));
   } catch (error) {
-    console.error('Error publishing content:', error);
+    console.error('Error publishing:', error);
     toast('Error publishing. Please try again.');
   }
+}
+
+function deleteContent(id) {
+  if (!confirm('Delete this item?')) return;
+  state.contents = state.contents.filter(c => c.id != id);
+  save(); renderPublished(); renderFront(); renderHero();
+  toast('Deleted.');
+}
+
+function editContent(id) {
+  const item = state.contents.find(c => c.id == id);
+  if (!item) { toast('Article not found.'); return; }
+  pcTab('add', document.getElementById('pc-tab-add'));
+  document.getElementById('edit-id').value = id;
+  document.getElementById('publish-btn').textContent = 'Save Changes';
+  document.getElementById('cancel-edit-btn').style.display = '';
+  document.getElementById('content-type').value = item.type || 'article';
+  toggleContentType();
+  document.getElementById('content-era').value = item.era || 'ancient';
+  document.getElementById('content-category').value = item.category || '';
+  document.getElementById('content-author').value = item.author || '';
+  document.getElementById('content-title').value = item.title || '';
+  document.getElementById('content-subtitle').value = item.subtitle || '';
+  if (item.type === 'video') {
+    document.getElementById('content-video-url').value = item.videoUrl || '';
+    document.getElementById('content-video-desc').value = item.videoDesc || '';
+    if (item.embedUrl) previewVideo(item.videoUrl || '');
+  } else {
+    document.getElementById('content-body').value = item.body || '';
+  }
+  if (item.image) {
+    document.getElementById('image-preview').src = item.image;
+    document.getElementById('image-preview-wrap').style.display = 'block';
+    document.getElementById('image-upload-area').style.borderColor = '#555';
+    const uploadText = document.querySelector('.image-upload-text');
+    if (uploadText) uploadText.textContent = 'Click to replace the current cover image';
+  } else {
+    clearImage();
+  }
+  document.getElementById('view-admin').scrollTop = 0;
+}
+
+function cancelEdit() {
+  clearForm();
+  pcTab('published', document.getElementById('pc-tab-published'));
+}
+
+function renderManage() { renderPublished(); }
+function renderAdminMembers() { renderPcMembers(); }
+
+function deleteMember(email) {
+  if (!confirm('Remove this member?')) return;
+  state.members = state.members.filter(m => m.email !== email);
+  save(); renderPcMembers(); toast('Member removed.');
+}
+
+
+
+// ── AI Article Generator Panel ───────────────────────────────────
+
+function showAIGeneratePanel() {
+  document.getElementById('ai-panel-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('ai-gen-topic').focus(), 100);
+}
+
+function closeAIPanel() {
+  document.getElementById('ai-panel-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // Reset state
+  document.getElementById('ai-gen-status').style.display = 'none';
+  document.getElementById('ai-gen-preview').style.display = 'none';
+  document.getElementById('ai-gen-btn').disabled = false;
+  document.getElementById('ai-gen-btn').textContent = '✦ Generate Article';
+}
+
+function setAIStatus(text, pct) {
+  const statusEl = document.getElementById('ai-gen-status');
+  statusEl.style.display = 'block';
+  document.getElementById('ai-gen-status-text').textContent = text;
+  document.getElementById('ai-gen-status-fill').style.width = pct + '%';
+}
+
+async function runAIGenerate() {
+  const topic   = document.getElementById('ai-gen-topic').value.trim();
+  const era     = document.getElementById('ai-gen-era').value;
+  const length  = document.getElementById('ai-gen-length').value;
+  const style   = document.getElementById('ai-gen-style').value;
+  const genCover   = document.getElementById('ai-gen-cover').checked;
+  const doPublish  = document.getElementById('ai-gen-publish').checked;
+
+  if (!topic) { toast('Enter a topic first.'); document.getElementById('ai-gen-topic').focus(); return; }
+
+  const btn = document.getElementById('ai-gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Working…';
+  document.getElementById('ai-gen-preview').style.display = 'none';
+
+  const wordRanges = { short: '400–600', medium: '700–900', long: '1000–1300' };
+  const styleGuide = {
+    narrative:    'Write as a compelling narrative with vivid scene-setting. Draw the reader into the moment.',
+    analytical:   'Write as a rigorous analytical essay. Build a clear argument and support it with evidence.',
+    biographical: 'Centre the story on the key individual(s). Show their psychology, decisions, and legacy.',
+    military:     'Focus on campaign strategy, troop movements, turning points, and battlefield conditions.',
+  };
+
+  const eraLabels = { ancient: 'Ancient World (before 500 AD)', medieval: 'Medieval (500–1500)', 'early-modern': 'Early Modern (1500–1800)', modern: 'Modern Era (1800–1914)', wwii: 'World Wars (1914–1945)' };
+  const categoryMap = { ancient: 'Ancient World', medieval: 'Medieval History', 'early-modern': 'Early Modern', modern: 'Modern Era', wwii: 'World War II' };
+
+  try {
+    // Step 1: Generate article
+    setAIStatus('Claude is writing your article…', 20);
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: `Write a Chronica history magazine article about: "${topic}".
+Era: ${eraLabels[era]}
+Style: ${styleGuide[style]}
+Length: ${wordRanges[length]} words.
+
+${styleGuide[style]}
+
+Return ONLY valid JSON, no markdown fences:
+{
+  "title": "compelling headline (no quotes inside)",
+  "subtitle": "one-sentence deck, max 18 words",
+  "author": "Chronica Editorial",
+  "body": "full article. Use blank lines between paragraphs. Start subheadings with ### on their own line."
+}` }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = (data.content || []).map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+
+    setAIStatus('Building cover image…', 55);
+
+    // Step 2: Generate cover image (parallel if possible)
+    let imgUrl = null;
+    if (genCover) {
+      try {
+        imgUrl = await buildPollinationsUrl(parsed.title);
+        // Show preview immediately
+        const prevImg = document.getElementById('ai-gen-preview-img');
+        prevImg.src = imgUrl;
+        prevImg.dataset.aiUrl = imgUrl;
+      } catch(e) { console.warn('Cover gen failed:', e); }
+    }
+
+    setAIStatus('Preparing article…', 80);
+
+    // Show preview
+    document.getElementById('ai-gen-preview').style.display = 'block';
+    document.getElementById('ai-gen-preview-title').textContent = parsed.title;
+    const bodyPreview = parsed.body.split('\n').slice(0, 4).join('\n');
+    document.getElementById('ai-gen-preview-body').textContent = bodyPreview + '…';
+
+    setAIStatus('Done!', 100);
+
+    if (doPublish) {
+      const rt = estimateReadTime(parsed.body);
+      const item = {
+        id: Date.now(),
+        type: 'article',
+        title: parsed.title,
+        subtitle: parsed.subtitle || '',
+        author: parsed.author || 'Chronica Editorial',
+        body: parsed.body,
+        era, category: categoryMap[era] || 'Modern Era',
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        readTimeLabel: rt.label, readTimeMinutes: rt.minutes, wordCount: rt.words,
+        autoGenerated: true,
+      };
+      if (imgUrl) item.image = imgUrl;
+      state.contents.unshift(item);
+      save(); renderFront(); renderHero();
+      toast(`✓ "${parsed.title}" published!`);
+      setTimeout(closeAIPanel, 1500);
+    } else {
+      // Load into editor form for review
+      closeAIPanel();
+      showView('admin');
+      pcTab('add', document.getElementById('pc-tab-add'));
+      document.getElementById('content-title').value = parsed.title;
+      document.getElementById('content-subtitle').value = parsed.subtitle || '';
+      document.getElementById('content-author').value = parsed.author || 'Chronica Editorial';
+      document.getElementById('content-body').value = parsed.body;
+      document.getElementById('content-era').value = era;
+      if (imgUrl) {
+        document.getElementById('image-preview').src = imgUrl;
+        document.getElementById('image-preview').dataset.aiUrl = imgUrl;
+        document.getElementById('image-preview-wrap').style.display = 'block';
+      }
+      toast('Article loaded in editor — review before publishing');
+    }
+
+  } catch(e) {
+    console.error('AI generate error:', e);
+    toast('Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '✦ Generate Article';
+    document.getElementById('ai-gen-status').style.display = 'none';
+  }
+}
+
+// "Write with AI" button inside the body textarea
+async function aiExpandBody() {
+  const title = document.getElementById('content-title').value.trim();
+  if (!title) { toast('Enter a title first.'); return; }
+  const era = document.getElementById('content-era').value;
+  const existing = document.getElementById('content-body').value.trim();
+  toast('✦ Claude is writing…');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: `Write a compelling 700–900 word Chronica history magazine article about: "${title}". Use blank lines between paragraphs. Use ### for subheadings. Output only the article body text, nothing else.${existing ? `\n\nExpand on this existing draft:\n${existing}` : ''}` }]
+      })
+    });
+    const data = await res.json();
+    const body = (data.content || []).map(b => b.text || '').join('').trim();
+    document.getElementById('content-body').value = body;
+    toast('✓ Article written by AI — review before publishing');
+  } catch(e) {
+    toast('Error: ' + e.message);
+  }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  // Escape closes any open overlay
+  if (e.key === 'Escape') {
+    if (document.getElementById('ai-panel-overlay').classList.contains('open')) { closeAIPanel(); return; }
+    if (document.getElementById('edit-modal-overlay').classList.contains('open')) { closeEditModal(); return; }
+    if (document.getElementById('login-overlay').style.display !== 'none') { closeLogin(); return; }
+  }
+  // Ctrl/Cmd+K focuses search
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    const si = document.getElementById('search-input');
+    if (si) { si.focus(); si.select(); }
+  }
+});
+
+async function buildPollinationsUrl(title) {
+  // Ask Claude for a vivid scene prompt
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: `Write a vivid image generation prompt (max 18 words) for a cinematic history magazine cover about: "${title}". Focus on a dramatic historical scene, no faces, no text. Output only the prompt.` }]
+    })
+  });
+  const data = await res.json();
+  const prompt = (data.content || []).map(b => b.text || '').join('').trim();
+  const seed = Math.floor(Math.random() * 999999);
+  // Correct Pollinations browser URL format
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ', cinematic, dramatic lighting, oil painting style, history magazine')}?width=1200&height=800&seed=${seed}&nologo=true&model=flux`;
+}
+
+async function generateAICover() {
+  const title = document.getElementById('content-title').value.trim();
+  if (!title) { toast('Enter a title first.'); return; }
+  const btn = document.getElementById('ai-cover-btn');
+  btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  try {
+    const imgUrl = await buildPollinationsUrl(title);
+    showImagePreview(imgUrl,
+      document.getElementById('image-preview'),
+      document.getElementById('image-preview-wrap'),
+      document.getElementById('image-upload-area'),
+      document.querySelector('.image-upload-text'),
+      btn, '✦ Generate AI Cover from Title'
+    );
+  } catch(e) {
+    toast('Error: ' + e.message);
+    btn.textContent = '✦ Generate AI Cover from Title';
+    btn.disabled = false;
+  }
+}
+
+async function generateEmAICover() {
+  const title = document.getElementById('em-title').value.trim();
+  if (!title) { toast('Enter a title first.'); return; }
+  const btn = document.getElementById('em-ai-btn');
+  btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  try {
+    const imgUrl = await buildPollinationsUrl(title);
+    showImagePreview(imgUrl,
+      document.getElementById('em-image-preview'),
+      document.getElementById('em-image-preview-wrap'),
+      document.getElementById('em-image-upload-area'),
+      document.getElementById('em-image-upload-text'),
+      btn, '✦ Generate AI Cover from Title'
+    );
+  } catch(e) {
+    toast('Error: ' + e.message);
+    btn.textContent = '✦ Generate AI Cover from Title';
+    btn.disabled = false;
+  }
+}
+
+function showImagePreview(imgUrl, previewImg, previewWrap, uploadArea, uploadText, btn, resetLabel) {
+  // Set src directly — Pollinations serves with CORS headers, browser can load it
+  previewImg.src = imgUrl;
+  previewImg.dataset.aiUrl = imgUrl;
+  previewWrap.style.display = 'block';
+  uploadArea.style.borderColor = 'var(--gold)';
+  if (uploadText) uploadText.textContent = '✓ AI image ready — click to replace with upload';
+  btn.textContent = '↺ Regenerate';
+  btn.disabled = false;
+  toast('✓ AI image generating — appears in a moment');
+  previewImg.onerror = function() {
+    toast('Image failed to load — try regenerating');
+    btn.textContent = resetLabel;
+  };
+}
+
+function getUploadedImage() {
+  const preview = document.getElementById('image-preview');
+  if (!preview || !preview.src) return null;
+  if (preview.src.startsWith('data:')) return preview.src;
+  if (preview.dataset && preview.dataset.aiUrl) return preview.dataset.aiUrl;
+  if (preview.src.includes('pollinations.ai')) return preview.src;
+  return null;
 }
 
 function getEmbedUrl(url) {
@@ -1277,15 +1629,12 @@ function handleImageUpload(input) {
 }
 
 function clearImage() {
-  document.getElementById('content-image').value = '';
-  document.getElementById('image-preview').src = '';
+  const inp = document.getElementById('content-image');
+  if (inp) inp.value = '';
+  const preview = document.getElementById('image-preview');
+  if (preview) { preview.src = ''; delete preview.dataset.aiUrl; }
   document.getElementById('image-preview-wrap').style.display = 'none';
   document.getElementById('image-upload-area').style.borderColor = '';
-}
-
-function getUploadedImage() {
-  const preview = document.getElementById('image-preview');
-  return preview && preview.src && preview.src.startsWith('data:') ? preview.src : null;
 }
 
 function previewVideo(url) {
@@ -1305,145 +1654,8 @@ function previewVideo(url) {
   }
 }
 
-function renderManage() {
-  try {
-    const list = document.getElementById('manage-content-list');
-    if (!state.contents.length) { 
-      list.innerHTML = '<div class="empty-state">No content yet.</div>'; 
-      return; 
-    }
-    list.innerHTML = state.contents.map(item => `
-      <div class="content-item">
-        <span class="content-item-type type-${item.type}">${item.type === 'article' ? 'Article' : 'Video'}</span>
-        <div class="content-item-title">${h(item.title)}</div>
-        <div class="content-item-meta">${h(item.era)} · ${h(item.date)}</div>
-        <div class="content-item-actions">
-          <button class="icon-btn" onclick="readContent(${item.id})">Read</button>
-          <button class="icon-btn" onclick="editContent(${item.id})">Edit</button>
-          <button class="icon-btn danger" onclick="deleteContent(${item.id})">Delete</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (error) {
-    console.error('Error rendering manage page:', error);
-  }
-}
-
-function deleteContent(id) {
-  try {
-    if (!confirm('Delete this article?')) return;
-    state.contents = state.contents.filter(c => c.id != id);
-    save(); 
-    renderManage(); 
-    renderFront();
-    toast('Deleted.');
-  } catch (error) {
-    console.error('Error deleting content:', error);
-    toast('Error deleting article.');
-  }
-}
-
-function editContent(id) {
-  try {
-    const item = state.contents.find(c => c.id == id);
-    if (!item) { toast('Article not found.'); return; }
-
-    switchTab('add', document.getElementById('tab-btn-add'));
-    document.getElementById('edit-id').value = id;
-    document.getElementById('admin-form-title').textContent = 'Edit Article';
-    document.getElementById('publish-btn').textContent = 'Save Changes';
-    document.getElementById('cancel-edit-btn').style.display = '';
-
-    document.getElementById('content-type').value = item.type || 'article';
-    toggleContentType();
-    document.getElementById('content-era').value = item.era || 'ancient';
-    document.getElementById('content-category').value = item.category || '';
-    document.getElementById('content-author').value = item.author || '';
-    document.getElementById('content-title').value = item.title || '';
-    document.getElementById('content-subtitle').value = item.subtitle || '';
-
-    if (item.type === 'video') {
-      document.getElementById('content-video-url').value = item.videoUrl || '';
-      document.getElementById('content-video-desc').value = item.videoDesc || '';
-      if (item.embedUrl) previewVideo(item.videoUrl || '');
-    } else {
-      document.getElementById('content-body').value = item.body || '';
-    }
-
-    if (item.image) {
-      document.getElementById('image-preview').src = item.image;
-      document.getElementById('image-preview-wrap').style.display = 'block';
-      document.getElementById('image-upload-area').style.borderColor = 'var(--accent)';
-      // Show "current image" note and replace indicator
-      const uploadText = document.querySelector('.image-upload-text');
-      if (uploadText) uploadText.textContent = 'Click to replace the current cover image';
-    } else {
-      clearImage();
-      const uploadText = document.querySelector('.image-upload-text');
-      if (uploadText) uploadText.textContent = 'Click to upload a cover image';
-    }
-
-    // For video type, show current video URL with replace hint
-    if (item.type === 'video') {
-      const videoHint = document.querySelector('#video-fields .form-hint');
-      if (videoHint) videoHint.textContent = 'Replace the URL below to swap the video entirely — the old one will be removed.';
-    }
-
-    document.getElementById('view-admin').scrollTop = 0;
-    toast('Article loaded for editing.');
-  } catch (error) {
-    console.error('Error loading article for edit:', error);
-    toast('Error loading article.');
-  }
-}
-
-function cancelEdit() {
-  clearForm();
-  switchTab('manage', document.getElementById('tab-btn-manage'));
-}
-
-function renderAdminMembers() {
-  try {
-    const list = document.getElementById('admin-members-list');
-    if (!state.members.length) { 
-      list.innerHTML = '<div class="empty-state">No subscribers yet.</div>'; 
-      return; 
-    }
-    list.innerHTML = state.members.map(m => `
-      <div class="content-item">
-        <div class="content-item-title">${h(m.name)}</div>
-        <div class="content-item-meta">${h(m.email)}</div>
-        <div class="content-item-meta">${h(m.date)}</div>
-        <div class="content-item-actions">
-          <button class="icon-btn danger" onclick="deleteMember('${m.email}')">Remove</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (error) {
-    console.error('Error rendering admin members:', error);
-  }
-}
-
-function deleteMember(email) {
-  try {
-    if (!confirm('Remove this member?')) return;
-    state.members = state.members.filter(m => m.email !== email);
-    save(); 
-    renderAdminMembers(); 
-    toast('Member removed.');
-  } catch (error) {
-    console.error('Error deleting member:', error);
-    toast('Error removing member.');
-  }
-}
-
 function getSample(id) { 
   try {
-    // Prefer any user-edited copy stored in state.contents that maps to this sample id
-    if (state && Array.isArray(state.contents)) {
-      const overridden = state.contents.find(c => c._sampleId === id);
-      if (overridden) return overridden;
-    }
     return SAMPLES[id] || null;
   } catch (error) {
     console.error('Error getting sample:', error);
@@ -2128,7 +2340,7 @@ async function renderThisDayWidget() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
-        messages: [{ role: 'user', content: `List 3 significant historical events that happened on ${dayMonth} in different years (spread across ancient, medieval/early-modern, and modern history). Return ONLY valid JSON array, no markdown:\n[{"year":"...","event":"one sentence description of what happened","era":"ancient|medieval|modern"}]` }]
+        messages: [{ role: 'user', content: `List 3 significant historical events that happened on ${dayMonth} in different years. Spread them across different periods of history. For each event write 2-3 sentences describing what happened and why it mattered. Return ONLY valid JSON array, no markdown:\n[{"year":"...","event":"2-3 sentence description of what happened and its significance","era":"ancient|medieval|early-modern|modern|wwii"}]` }]
       })
     });
     const data = await res.json();
@@ -2138,13 +2350,6 @@ async function renderThisDayWidget() {
     insertThisDayWidget(dayMonth, events);
   } catch(e) {
     console.error('TDIH error:', e);
-    // Fallback: show a small static set of events so the widget is visible
-    const fallbackEvents = [
-      { year: '44 BC', event: 'Julius Caesar assassinated in Rome', era: 'ancient' },
-      { year: '1453', event: 'Fall of Constantinople to the Ottoman Empire', era: 'medieval' },
-      { year: '1944', event: 'Allied landings in Normandy (D-Day)', era: 'modern' }
-    ];
-    try { insertThisDayWidget(dayMonth, fallbackEvents); } catch (ie) { console.error('TDIH fallback failed', ie); }
   }
 }
 
@@ -2152,36 +2357,39 @@ function insertThisDayWidget(dayMonth, events) {
   const existing = document.getElementById('tdih-widget');
   if (existing) existing.remove();
 
-  const eraIcon = { ancient: '⚱', medieval: '⚔', modern: '🏭', default: '📜' };
+  const eraIcon = { ancient: '⚱', medieval: '⚔', modern: '🏭', 'early-modern': '⛵', wwii: '✈', default: '📜' };
+
+  const eventsHtml = events.map(ev => `
+    <div class="tdih-event">
+      <div class="tdih-event-year">${h(String(ev.year))}</div>
+      <div class="tdih-event-body">
+        <div class="tdih-event-icon">${eraIcon[ev.era] || eraIcon.default}</div>
+        <div class="tdih-event-text">${h(ev.event)}</div>
+      </div>
+    </div>
+  `).join('');
 
   const widget = document.createElement('div');
   widget.id = 'tdih-widget';
   widget.className = 'tdih-widget';
   widget.innerHTML = `
-    <div class="tdih-header">
-      <span class="tdih-icon">📅</span>
-      <span class="tdih-title">This Day in History</span>
-      <span class="tdih-date">${dayMonth}</span>
-    </div>
-    <div class="tdih-events">
-      ${events.map(ev => `
-        <div class="tdih-event">
-          <div class="tdih-year">${h(ev.year)}</div>
-          <div class="tdih-event-icon">${eraIcon[ev.era] || eraIcon.default}</div>
-          <div class="tdih-event-text">${h(ev.event)}</div>
-        </div>
-      `).join('')}
+    <div class="tdih-inner">
+      <div class="tdih-left">
+        <div class="tdih-cal-icon">📅</div>
+        <div class="tdih-cal-date">${dayMonth}</div>
+        <div class="tdih-cal-label">This Day<br>in History</div>
+      </div>
+      <div class="tdih-divider"></div>
+      <div class="tdih-right">${eventsHtml}</div>
     </div>
   `;
 
+  const heroWrap = document.getElementById('hero-wrap');
   const frontPage = document.getElementById('front-page-content');
-  if (frontPage) frontPage.parentNode.insertBefore(widget, frontPage);
+  if (heroWrap && heroWrap.parentNode) {
+    heroWrap.parentNode.insertBefore(widget, frontPage);
+  }
 }
-
-// Series system disabled per request (no series UI)
-const SERIES_LIST = {};
-function getSeriesForArticle(id) { return null; }
-function renderSeriesTrail(articleId) { return ''; }
 
 // ── Era Article Counts ───────────────────────────────────────────
 function getEraCount(eraId) {
