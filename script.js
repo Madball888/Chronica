@@ -60,7 +60,7 @@ function getFallbackImage(item, w = 1200, h = 800) {
   if (titleWord) parts.push(titleWord);
   parts.push('history', 'museum', 'archive');
   const q = encodeURIComponent(parts.filter(Boolean).join(','));
-  return `https://source.unsplash.com/${w}x${h}/?${q}`;
+  return `https://picsum.photos/${w}/${h}`;
 }
 
 function openLogin() {
@@ -1518,7 +1518,7 @@ Return ONLY valid JSON, no markdown fences:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -1653,7 +1653,7 @@ async function aiExpandBody() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: `Write a compelling 700–900 word Chronica history magazine article about: "${title}". Use blank lines between paragraphs. Use ### for subheadings. Output only the article body text, nothing else.${existing ? `\n\nExpand on this existing draft:\n${existing}` : ''}` }]
       })
     });
@@ -1689,7 +1689,7 @@ async function buildPollinationsUrl(title) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: `Write a vivid image generation prompt (max 18 words) for a cinematic history magazine cover about: "${title}". Focus on a dramatic historical scene, no faces, no text. Output only the prompt.` }]
     })
   });
@@ -2417,7 +2417,7 @@ Return ONLY valid JSON (no markdown, no backticks) with these exact fields:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
+          max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }]
         })
       });
@@ -2513,7 +2513,7 @@ async function renderThisDayWidget() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: `List 3 significant historical events that happened on ${dayMonth} in different years. Spread them across different periods of history. For each event write 2-3 sentences describing what happened and why it mattered. Return ONLY valid JSON array, no markdown:\n[{"year":"...","event":"2-3 sentence description of what happened and its significance","era":"ancient|medieval|early-modern|modern|wwii"}]` }]
       })
     });
