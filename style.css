@@ -1537,16 +1537,27 @@ select { font-family: var(--font-ui); font-size: 13px; }
 .hero-slider {
   position: relative;
   overflow: hidden;
+  min-height: 360px;
 }
 
 .hero-slides {
-  display: flex;
-  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .hero-slide {
-  min-width: 100%;
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.hero-slide:first-child {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .hero-dots {
