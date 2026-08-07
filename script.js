@@ -1,4 +1,7 @@
 // Initialize state
+// ── API Proxy ───────────────────────────────────────────────────────────────
+// Set this to your Cloudflare Worker URL after deploying chronica-proxy-worker.js
+const API_BASE = "https://wd.vladimirjankovikj.workers.dev";
 // ── Admin / Login state ──────────────────────────────────────────────────────
 const ADMIN_PASSWORD = 'chronica2024';
 let isAdmin = false;
@@ -7,8 +10,7 @@ let isAdmin = false;
 const THEME_STORE_KEY = 'chronica-theme'; // 'day' | 'night' | 'system'
 const THEME_BUTTON_LABEL = {
   day: '☀ Day',
-  night: '☾ Night',
-  system: '☼ System'
+  night: '☾ Night'
 };
 
 function setThemeMode(mode) {
@@ -1513,7 +1515,7 @@ Return ONLY valid JSON, no markdown fences:
   "body": "full article. Use blank lines between paragraphs. Start subheadings with ### on their own line."
 }`;
 
-    const res = await fetch('/v1/messages/stream', {
+    const res = await fetch(API_BASE + '/v1/messages/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1648,7 +1650,7 @@ async function aiExpandBody() {
   const existing = document.getElementById('content-body').value.trim();
   toast('✦ Claude is writing…');
   try {
-    const res = await fetch('/v1/messages', {
+    const res = await fetch(API_BASE + '/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1684,7 +1686,7 @@ document.addEventListener('keydown', function(e) {
 
 async function buildPollinationsUrl(title) {
   // Ask Claude for a vivid scene prompt
-  const res = await fetch('/v1/messages', {
+  const res = await fetch(API_BASE + '/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2412,7 +2414,7 @@ Return ONLY valid JSON (no markdown, no backticks) with these exact fields:
   ]
 }`;
 
-      const res = await fetch('/v1/messages', {
+      const res = await fetch(API_BASE + '/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2508,7 +2510,7 @@ async function renderThisDayWidget() {
 
   // Generate via API
   try {
-    const res = await fetch('/v1/messages', {
+    const res = await fetch(API_BASE + '/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
