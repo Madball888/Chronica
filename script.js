@@ -7,7 +7,7 @@ const ADMIN_PASSWORD = 'chronica2024';
 let isAdmin = false;
 
 // ── Theme (Day / Night) ─────────────────────────────────────────────────────
-const THEME_STORE_KEY = 'chronica-theme'; // 'day' | 'night' | 'system'
+const THEME_STORE_KEY = 'chronica-theme'; // 'day' | 'night'
 const THEME_BUTTON_LABEL = {
   day: '☀ Day',
   night: '☾ Night'
@@ -16,11 +16,7 @@ const THEME_BUTTON_LABEL = {
 function setThemeMode(mode) {
   const root = document.documentElement;
   if (!root) return;
-  if (mode === 'system') {
-    root.removeAttribute('data-theme');
-  } else {
-    root.setAttribute('data-theme', mode);
-  }
+  root.setAttribute('data-theme', mode);
 
   try {
     localStorage.setItem(THEME_STORE_KEY, mode);
@@ -31,22 +27,22 @@ function setThemeMode(mode) {
 }
 
 function initTheme() {
-  let mode = 'system';
+  let mode = 'day';
   try {
-    mode = localStorage.getItem(THEME_STORE_KEY) || 'system';
+    mode = localStorage.getItem(THEME_STORE_KEY) || 'day';
   } catch {}
 
-  if (mode !== 'day' && mode !== 'night' && mode !== 'system') mode = 'system';
+  if (mode !== 'day' && mode !== 'night') mode = 'day';
   setThemeMode(mode);
 }
 
 function cycleThemeMode() {
-  let mode = 'system';
+  let mode = 'day';
   try {
-    mode = localStorage.getItem(THEME_STORE_KEY) || 'system';
+    mode = localStorage.getItem(THEME_STORE_KEY) || 'day';
   } catch {}
 
-  const next = mode === 'system' ? 'day' : (mode === 'day' ? 'night' : 'system');
+  const next = mode === 'day' ? 'night' : 'day';
   setThemeMode(next);
 }
 
@@ -312,14 +308,23 @@ function renderHero() {
   });
 
   _heroIndex = 0;
+  // Initialize crossfade: show first slide, hide rest
+  const initSlides = document.querySelectorAll('.hero-slide');
+  initSlides.forEach((s, i) => {
+    s.style.opacity = i === 0 ? '1' : '0';
+    s.style.pointerEvents = i === 0 ? '' : 'none';
+  });
   startHeroTimer();
 }
 
 
 function heroGoTo(idx) {
   _heroIndex = (idx + _heroItems.length) % _heroItems.length;
-  const slides = document.getElementById('hero-slides');
-  if (slides) slides.style.transform = `translateX(-${_heroIndex * 100}%)`;
+  const slides = document.querySelectorAll('.hero-slide');
+  slides.forEach((s, i) => {
+    s.style.opacity = i === _heroIndex ? '1' : '0';
+    s.style.pointerEvents = i === _heroIndex ? '' : 'none';
+  });
   document.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === _heroIndex));
   resetHeroTimer();
 }
