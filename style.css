@@ -3,7 +3,7 @@
 :root {
   --ink: #1a1610;
   --ink-muted: #4a4540;
-  --ink-faint: #8a8278;
+  --ink-faint: #6b6358;
   --parchment: #f5f0e8;
   --parchment-warm: #ede6d6;
   --parchment-dark: #d4c9b0;
@@ -15,6 +15,7 @@
   --gold-light: #c8960f;
   --stone: #3d3428;
   --midnight: #1a0f0a;
+  --stone-text: #b8a886;
   --white: #fffdf7;
   --font-title: 'Cinzel', serif;
   --font-display: 'Playfair Display', serif;
@@ -40,6 +41,7 @@
     --gold-light: #e1b64a;
     --stone: #12100d;
     --midnight: #0b0706;
+    --stone-text: #a99a84;
     --white: #f7f1e2;
   }
 }
@@ -49,7 +51,7 @@ html[data-theme="day"] {
   /* ensure we always get the light defaults even if system is dark */
   --ink: #1a1610;
   --ink-muted: #4a4540;
-  --ink-faint: #8a8278;
+  --ink-faint: #6b6358;
   --parchment: #f5f0e8;
   --parchment-warm: #ede6d6;
   --parchment-dark: #d4c9b0;
@@ -61,6 +63,7 @@ html[data-theme="day"] {
   --gold-light: #c8960f;
   --stone: #3d3428;
   --midnight: #1a0f0a;
+  --stone-text: #b8a886;
   --white: #fffdf7;
 }
 
@@ -277,7 +280,7 @@ body {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--stone-text);
   padding: 0.85rem 1.25rem;
   white-space: nowrap;
   cursor: pointer;
@@ -290,7 +293,7 @@ body {
   transition: all 0.2s;
 }
 
-.era-tab:hover { color: var(--gold-light); }
+.era-tab:hover { color: var(--stone-text); }
 .era-tab.active { color: var(--gold-light); border-bottom-color: var(--gold-light); }
 
 .admin-strip {
@@ -807,7 +810,7 @@ body {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--stone-text);
   padding: 0.6rem 1rem;
   white-space: nowrap;
   cursor: pointer;
@@ -820,7 +823,7 @@ body {
   transition: all 0.2s;
 }
 
-.category-tab:hover { color: var(--gold-light); }
+.category-tab:hover { color: var(--stone-text); }
 .category-tab.active { color: var(--gold-light); border-bottom-color: var(--gold-light); }
 
 .member-panel {
@@ -1430,7 +1433,7 @@ select { font-family: var(--font-ui); font-size: 13px; }
   letter-spacing: -0.01em;
 }
 
-.hero-card:hover .hero-headline { color: var(--accent); }
+.hero-card:hover .hero-headline { color: var(--ink); }
 .hero-deck {
   font-family: var(--font-body);
   font-size: 1rem;
@@ -1537,27 +1540,16 @@ select { font-family: var(--font-ui); font-size: 13px; }
 .hero-slider {
   position: relative;
   overflow: hidden;
-  min-height: 360px;
 }
 
 .hero-slides {
-  position: relative;
+  display: flex;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hero-slide {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-  pointer-events: none;
-}
-
-.hero-slide:first-child {
-  position: relative;
-  opacity: 1;
-  pointer-events: auto;
+  min-width: 100%;
+  flex-shrink: 0;
 }
 
 .hero-dots {
