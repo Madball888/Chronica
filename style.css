@@ -3,7 +3,7 @@
 :root {
   --ink: #1a1610;
   --ink-muted: #4a4540;
-  --ink-faint: #6b6358;
+  --ink-faint: #4a4540;
   --parchment: #f5f0e8;
   --parchment-warm: #ede6d6;
   --parchment-dark: #d4c9b0;
@@ -11,11 +11,11 @@
   --rule-light: #ddd4c0;
   --accent: #8b1a1a;
   --accent-light: #b52020;
-  --gold: #9a6f0f;
-  --gold-light: #c8960f;
+  --gold: #7a5808;
+  --gold-light: #b88a0a;
   --stone: #3d3428;
   --midnight: #1a0f0a;
-  --stone-text: #b8a886;
+  --stone-text: #e0d4b8;
   --white: #fffdf7;
   --font-title: 'Cinzel', serif;
   --font-display: 'Playfair Display', serif;
@@ -51,7 +51,7 @@ html[data-theme="day"] {
   /* ensure we always get the light defaults even if system is dark */
   --ink: #1a1610;
   --ink-muted: #4a4540;
-  --ink-faint: #6b6358;
+  --ink-faint: #4a4540;
   --parchment: #f5f0e8;
   --parchment-warm: #ede6d6;
   --parchment-dark: #d4c9b0;
@@ -59,11 +59,11 @@ html[data-theme="day"] {
   --rule-light: #ddd4c0;
   --accent: #8b1a1a;
   --accent-light: #b52020;
-  --gold: #9a6f0f;
-  --gold-light: #c8960f;
+  --gold: #7a5808;
+  --gold-light: #b88a0a;
   --stone: #3d3428;
   --midnight: #1a0f0a;
-  --stone-text: #b8a886;
+  --stone-text: #e0d4b8;
   --white: #fffdf7;
 }
 
