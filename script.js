@@ -443,7 +443,7 @@ function saveInlineEdit() {
 
   // Get new image if uploaded or AI-generated
   const newImagePreview = document.getElementById('em-image-preview');
-  const newImage = newImagePreview && newImagePreview.src && (newImagePreview.src.startsWith('data:') || newImagePreview.dataset.aiUrl || newImagePreview.src.includes('pollinations.ai'))
+  const newImage = newImagePreview && newImagePreview.src && (newImagePreview.src.startsWith('data:') || newImagePreview.dataset.aiUrl || newImagePreview.src.includes('wikimedia.org') || newImagePreview.src.includes('upload.wikimedia'))
     ? (newImagePreview.dataset.aiUrl || newImagePreview.src)
     : null;
 
@@ -1586,7 +1586,7 @@ Return ONLY valid JSON, no markdown fences:
     let imgUrl = null;
     if (genCover) {
       try {
-        imgUrl = await buildPollinationsUrl(parsed.title);
+        imgUrl = await buildWikimediaUrl(parsed.title);
         const prevImg = document.getElementById('ai-gen-preview-img');
         prevImg.src = imgUrl;
         prevImg.dataset.aiUrl = imgUrl;
@@ -1689,22 +1689,50 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-async function buildPollinationsUrl(title) {
-  // Ask Claude for a vivid scene prompt
-  const res = await fetch(API_BASE + '/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: `Write a vivid image generation prompt (max 18 words) for a cinematic history magazine cover about: "${title}". Focus on a dramatic historical scene, no faces, no text. Output only the prompt.` }]
-    })
-  });
+async function buildWikimediaUrl(title) {
+  // Search Wikimedia Commons for a real historical image matching the title
+  const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(title)}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1200`;
+
+  const res = await fetch(searchUrl);
   const data = await res.json();
-  const prompt = (data.content || []).map(b => b.text || '').join('').trim();
-  const seed = Math.floor(Math.random() * 999999);
-  // Correct Pollinations browser URL format
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ', cinematic, dramatic lighting, oil painting style, history magazine')}?width=1200&height=800&seed=${seed}&nologo=true&model=flux`;
+
+  if (!data.query || !data.query.pages) {
+    throw new Error('No image found on Wikimedia Commons');
+  }
+
+  // Get pages, sort by index, find first usable image
+  const pages = Object.values(data.query.pages).sort((a, b) => (a.index || 0) - (b.index || 0));
+
+  for (const page of pages) {
+    const info = page.imageinfo && page.imageinfo[0];
+    if (!info || !info.thumburl) continue;
+
+    // Skip SVGs, icons, and tiny images
+    const ext = (page.title || '').toLowerCase();
+    if (ext.endsWith('.svg') || ext.endsWith('.gif') || ext.endsWith('.pdf')) continue;
+    if (info.width < 400 || info.height < 200) continue;
+
+    // Get license info
+    const license = info.extmetadata && info.extmetadata.LicenseShortName;
+    const licenseName = license ? license.value.replace(/<[^>]*>/g, '').trim() : 'Wikimedia';
+
+    return info.thumburl;
+  }
+
+  // Fallback: try Wikipedia article image
+  const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&titles=${encodeURIComponent(title)}&pithumbsize=1200`;
+  const wikiRes = await fetch(wikiUrl);
+  const wikiData = await wikiRes.json();
+
+  if (wikiData.query && wikiData.query.pages) {
+    for (const page of Object.values(wikiData.query.pages)) {
+      if (page.thumbnail && page.thumbnail.source) {
+        return page.thumbnail.source;
+      }
+    }
+  }
+
+  throw new Error('No suitable image found');
 }
 
 async function generateAICover() {
@@ -1714,7 +1742,7 @@ async function generateAICover() {
   btn.textContent = '⏳ Generating…';
   btn.disabled = true;
   try {
-    const imgUrl = await buildPollinationsUrl(title);
+    const imgUrl = await buildWikimediaUrl(title);
     showImagePreview(imgUrl,
       document.getElementById('image-preview'),
       document.getElementById('image-preview-wrap'),
@@ -1736,7 +1764,7 @@ async function generateEmAICover() {
   btn.textContent = '⏳ Generating…';
   btn.disabled = true;
   try {
-    const imgUrl = await buildPollinationsUrl(title);
+    const imgUrl = await buildWikimediaUrl(title);
     showImagePreview(imgUrl,
       document.getElementById('em-image-preview'),
       document.getElementById('em-image-preview-wrap'),
@@ -1752,7 +1780,7 @@ async function generateEmAICover() {
 }
 
 function showImagePreview(imgUrl, previewImg, previewWrap, uploadArea, uploadText, btn, resetLabel) {
-  // Set src directly — Pollinations serves with CORS headers, browser can load it
+  // Set src directly — Wikimedia serves with CORS headers, browser can load it
   previewImg.src = imgUrl;
   previewImg.dataset.aiUrl = imgUrl;
   previewWrap.style.display = 'block';
@@ -1772,7 +1800,7 @@ function getUploadedImage() {
   if (!preview || !preview.src) return null;
   if (preview.src.startsWith('data:')) return preview.src;
   if (preview.dataset && preview.dataset.aiUrl) return preview.dataset.aiUrl;
-  if (preview.src.includes('pollinations.ai')) return preview.src;
+  if (preview.src.includes('wikimedia.org') || preview.src.includes('upload.wikimedia')) return preview.src;
   return null;
 }
 
